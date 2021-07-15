@@ -3,13 +3,11 @@ package com.example.studyapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,22 +16,50 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.navArgument
+import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyApp()
+            AppNavigator()
         }
     }
 }
 
 @Composable
-fun MyApp() {
+fun AppNavigator() {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = "mainView") {
+        composable("mainView") { MyApp(navController = navController) }
+        composable(
+            "weekQuestions/{week}",
+            arguments = listOf(navArgument("week") {
+                type = NavType.StringType
+            })
+        ) { backStackEntry ->
+            backStackEntry.arguments?.getString("week")?.let { week ->
+                WeekQuestions(week = week)
+            }
+        }
+    }
+}
+
+@Composable
+fun WeekQuestions(week : String) {
+    Text(text = week)
+}
+
+@Composable
+fun MyApp(navController : NavController) {
     StudyAppTheme {
         // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
@@ -75,7 +101,8 @@ fun MyApp() {
                             finish = 3,
                             scaffoldState = scaffoldState,
                             modifier = modifier,
-                            LEFT
+                            LEFT,
+                            navController
                         )
                         Divider(modifier = Modifier.width(3.dp))
                         ButtonColumn(
@@ -83,7 +110,8 @@ fun MyApp() {
                             finish = 6,
                             scaffoldState = scaffoldState,
                             modifier = modifier,
-                            id = RIGHT
+                            id = RIGHT,
+                            navController
                         )
                     }
                 }
@@ -101,9 +129,9 @@ fun ButtonColumn(
     finish: Int,
     scaffoldState: ScaffoldState,
     modifier: Modifier,
-    id: String
+    id: String,
+    navController: NavController
 ) {
-    val scope = rememberCoroutineScope()
     Column(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -111,9 +139,8 @@ fun ButtonColumn(
     ) {
         for (i in start..finish) {
             WeekButton(weekNumber = i, padding = 8.dp, modifier = Modifier.layoutId(i)) {
-                scope.launch {
-                    scaffoldState.snackbarHostState.showSnackbar("Content Clicked for week $i")
-                }
+                val text = "Week$i"
+                navController.navigate("weekQuestions/$text")
             }
             Divider(
                 modifier = modifier
@@ -153,5 +180,5 @@ fun Greeting(name: String) {
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    MyApp()
+    AppNavigator()
 }
