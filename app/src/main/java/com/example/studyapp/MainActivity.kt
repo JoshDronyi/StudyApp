@@ -3,7 +3,6 @@ package com.example.studyapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -115,10 +114,12 @@ fun ButtonColumn(
                     scaffoldState.snackbarHostState.showSnackbar("Content Clicked for week $i")
                 }
             }
-            Divider(
-                modifier = modifier
-                    .width(150.dp)
-            )
+            if(i!=finish){
+                Divider(
+                    modifier = modifier
+                        .width(150.dp)
+                )
+            }
         }
     }
 
