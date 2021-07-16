@@ -7,4 +7,11 @@ data class Question(
     val wrongAnswer1: String,
     val wrongAnswer2: String,
     val wrongAnswer3: String
-)
+) {
+    fun mixQuestions() = listOf<String>(
+        correctAnswer,
+        wrongAnswer1,
+        wrongAnswer2,
+        wrongAnswer3
+    ).shuffled()
+}

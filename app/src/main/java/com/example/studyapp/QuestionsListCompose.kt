@@ -28,6 +28,7 @@ import androidx.navigation.NavController
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.theme.Shapes
 import com.example.studyapp.util.listQuesitons
+import com.example.studyapp.viewmodel.QuestionsViewModel
 import kotlin.math.round
 
 @Preview(showBackground = true)
@@ -38,7 +39,7 @@ fun PreviewWeekList() {
 
 
 @Composable
-fun WeekQuestions(week: String, navController : NavController) {
+fun WeekQuestions(navController : NavController,viewModel: QuestionsViewModel) {
 
     val constraints = ConstraintSet {
         val topText = createRefFor("weekText")
@@ -62,14 +63,16 @@ fun WeekQuestions(week: String, navController : NavController) {
         }
     }
     ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-        Text(
-            text = week,
-            textAlign = TextAlign.Center,
-            fontSize = 28.sp,
-            modifier = Modifier
-                .layoutId("weekText")
-                .padding(16.dp)
-        )
+        viewModel.currentWeek.value?.let {
+            Text(
+                text = it,
+                textAlign = TextAlign.Center,
+                fontSize = 28.sp,
+                modifier = Modifier
+                    .layoutId("weekText")
+                    .padding(16.dp)
+            )
+        }
         LazyColumn(
             modifier = Modifier
                 .layoutId("questionList")
@@ -87,7 +90,8 @@ fun WeekQuestions(week: String, navController : NavController) {
                         .padding(16.dp)
                 ) {
                     Box(Modifier.clickable {
-                        navController.navigate("")
+                        viewModel.currentQuestion.postValue(question)
+                        navController.navigate("questionView")
                     }.fillMaxSize()) {
                         Text(
                             text = "Question number ${number.value}", modifier = Modifier.padding(

@@ -13,20 +13,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.viewmodel.QuestionsViewModel
 
 @Preview(showBackground = true)
 @Composable
 fun Preview() {
-    MyApp(navController = rememberNavController())
+    //MyApp(navController = rememberNavController())
 }
 
 @Composable
-fun MyApp(navController: NavController) {
+fun MyApp(navController: NavController,viewModel : QuestionsViewModel) {
     StudyAppTheme {
         // A surface container using the 'background' color from the theme
         Surface(color = MaterialTheme.colors.background) {
@@ -64,7 +66,8 @@ fun MyApp(navController: NavController) {
                         finish = 3,
                         modifier = modifier,
                         LEFT,
-                        navController
+                        navController,
+                        viewModel = viewModel
                     )
                     Divider(modifier = Modifier.width(3.dp))
                     ButtonColumn(
@@ -72,7 +75,8 @@ fun MyApp(navController: NavController) {
                         finish = 6,
                         modifier = modifier,
                         id = RIGHT,
-                        navController
+                        navController,
+                        viewModel = viewModel
                     )
                 }
             }
@@ -87,7 +91,8 @@ fun ButtonColumn(
     finish: Int,
     modifier: Modifier,
     id: String,
-    navController: NavController
+    navController: NavController,
+    viewModel : QuestionsViewModel
 ) {
     Column(
         verticalArrangement = Arrangement.Top,
@@ -96,8 +101,8 @@ fun ButtonColumn(
     ) {
         for (i in start..finish) {
             WeekButton(weekNumber = i, padding = 8.dp, modifier = Modifier.layoutId(i)) {
-                val text = "Week$i"
-                navController.navigate("weekQuestions/$text")
+                viewModel.currentWeek.postValue("Week $i")
+                navController.navigate("weekQuestions")
             }
             Divider(
                 modifier = modifier

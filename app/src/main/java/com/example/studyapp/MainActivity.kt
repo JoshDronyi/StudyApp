@@ -3,6 +3,7 @@ package com.example.studyapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,14 +26,19 @@ import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.viewmodel.QuestionsViewModel
+import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
+
+    private val viewModel: QuestionsViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent{
+        setContent {
             StudyAppTheme {
                 Surface(color = MaterialTheme.colors.background) {
-                    AppNavigator()
+                    AppNavigator(viewModel = viewModel)
                 }
             }
         }
@@ -40,19 +46,17 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigator() {
+fun AppNavigator(viewModel: QuestionsViewModel) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "mainView") {
-        composable("mainView") { MyApp(navController = navController) }
+        composable("mainView") { MyApp(navController = navController,viewModel = viewModel) }
+        composable("weekQuestions") {
+            WeekQuestions(navController, viewModel)
+        }
         composable(
-            "weekQuestions/{week}",
-            arguments = listOf(navArgument("week") {
-                type = NavType.StringType
-            })
-        ) { backStackEntry ->
-            backStackEntry.arguments?.getString("week")?.let { week ->
-                WeekQuestions(week = week,navController)
-            }
+            "questionView"
+        ) {
+            QuestionScreen(viewModel)
         }
     }
 }
@@ -60,5 +64,5 @@ fun AppNavigator() {
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    AppNavigator()
+    //AppNavigator()
 }
