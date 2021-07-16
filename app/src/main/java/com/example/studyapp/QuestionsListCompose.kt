@@ -1,15 +1,19 @@
 package com.example.studyapp
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
@@ -20,86 +24,21 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
+import androidx.navigation.NavController
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.theme.Shapes
+import com.example.studyapp.util.listQuesitons
 import kotlin.math.round
 
 @Preview(showBackground = true)
 @Composable
 fun PreviewWeekList() {
-    WeekQuestions(week = "Test")
+    //WeekQuestions(week = "Test")
 }
 
 
 @Composable
-fun WeekQuestions(week: String) {
-
-    val questions = listOf<Question>(
-        Question(
-            1,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            2,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            3,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            4,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            5,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            6,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            7,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        ),
-        Question(
-            8,
-            "How to get a job?",
-            "Be good at it",
-            "Ask for the Gov",
-            "I don't know",
-            "They should just Hire me"
-        )
-    )
+fun WeekQuestions(week: String, navController : NavController) {
 
     val constraints = ConstraintSet {
         val topText = createRefFor("weekText")
@@ -128,9 +67,6 @@ fun WeekQuestions(week: String) {
             textAlign = TextAlign.Center,
             fontSize = 28.sp,
             modifier = Modifier
-                .background(
-                    Color.Blue,
-                )
                 .layoutId("weekText")
                 .padding(16.dp)
         )
@@ -139,13 +75,27 @@ fun WeekQuestions(week: String) {
                 .layoutId("questionList")
                 .fillMaxSize()
         ) {
-            items(questions) { question ->
-                Card(Modifier.padding(6.dp).fillMaxWidth(), elevation = 10.dp,shape = Shapes.large) {
-                    Text(
-                        text = "Question number ${question.id}", modifier = Modifier.padding(
-                            16.dp
+            items(listQuesitons()) { question ->
+                val number = remember {
+                    mutableStateOf(question.id)
+                }
+                Card(
+                    elevation = 10.dp,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Box(Modifier.clickable {
+                        navController.navigate("")
+                    }.fillMaxSize()) {
+                        Text(
+                            text = "Question number ${number.value}", modifier = Modifier.padding(
+                                16.dp
+                            )
                         )
-                    )
+                    }
+
                 }
             }
         }

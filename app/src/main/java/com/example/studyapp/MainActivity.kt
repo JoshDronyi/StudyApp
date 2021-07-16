@@ -29,8 +29,12 @@ import com.example.studyapp.ui.theme.StudyAppTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            AppNavigator()
+        setContent{
+            StudyAppTheme {
+                Surface(color = MaterialTheme.colors.background) {
+                    AppNavigator()
+                }
+            }
         }
     }
 }
@@ -47,7 +51,7 @@ fun AppNavigator() {
             })
         ) { backStackEntry ->
             backStackEntry.arguments?.getString("week")?.let { week ->
-                WeekQuestions(week = week)
+                WeekQuestions(week = week,navController)
             }
         }
     }
