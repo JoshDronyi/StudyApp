@@ -7,5 +7,6 @@ task clean(type: Delete) {
 buildscript {
     ext {
         compose_version = '1.0.0-rc02'
+        hilt_version = '2.35'
     }
 }
