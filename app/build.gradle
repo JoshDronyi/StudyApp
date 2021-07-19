@@ -67,7 +67,14 @@ dependencies {
     //Gson
     implementation "com.google.code.gson:gson:2.8.6"
 
-    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0-alpha02'
+    //Hilt
+    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0-alpha03'
 
+    //Retrofit
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
+    implementation "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-adapter:0.9.2"
 
+    //Room
+    implementation "androidx.room:room-runtime:2.3.0"
 }
