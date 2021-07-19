@@ -14,4 +14,7 @@ data class Question(
         wrongAnswer2,
         wrongAnswer3
     ).shuffled()
+    companion object{
+        fun emptyQuestion() = Question(0,"","","","","")
+    }
 }
