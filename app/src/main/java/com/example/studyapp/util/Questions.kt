@@ -9,7 +9,8 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
     ),
     Question(
         2,
@@ -17,7 +18,9 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     ),
     Question(
         3,
@@ -25,7 +28,9 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     ),
     Question(
         4,
@@ -33,7 +38,9 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     ),
     Question(
         5,
@@ -41,7 +48,9 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     ),
     Question(
         6,
@@ -49,7 +58,8 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
     ),
     Question(
         7,
@@ -57,7 +67,9 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     ),
     Question(
         8,
@@ -65,6 +77,8 @@ fun listQuesitons() = listOf(
         "Be good at it",
         "Ask for the Gov",
         "I don't know",
-        "They should just Hire me"
+        "They should just Hire me",
+        0
+
     )
 )

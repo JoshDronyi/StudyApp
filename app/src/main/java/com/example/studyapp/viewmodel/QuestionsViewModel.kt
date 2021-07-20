@@ -4,8 +4,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.studyapp.model.Question
+import com.example.studyapp.repo.RepositoryInterface
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class QuestionsViewModel : ViewModel() {
+@HiltViewModel
+class QuestionsViewModel @Inject constructor(val repository : RepositoryInterface) : ViewModel() {
     private val _questions = MutableLiveData<List<Question>>()
     val questions : LiveData<List<Question>>
         get() = _questions

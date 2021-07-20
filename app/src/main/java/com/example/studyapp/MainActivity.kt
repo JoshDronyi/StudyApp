@@ -28,9 +28,12 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.constants.LEFT
@@ -38,10 +41,12 @@ import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
 import com.example.studyapp.util.listQuesitons
 import com.example.studyapp.viewmodel.QuestionsViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val questionsViewModel: QuestionsViewModel by viewModels()
+    private val questionsViewModel : QuestionsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -248,7 +253,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun QuestionScreen() {
+    fun QuestionScreen(){
         val currentQuestion by questionsViewModel.currentQuestion.observeAsState(Question.emptyQuestion())
         QuestionContent(question = currentQuestion) {
             questionsViewModel.getNewQuestion()
@@ -256,7 +261,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
+    fun QuestionContent(question : Question, newQuestionChange : () -> Unit) {
         val constraints = ConstraintSet {
             val questionNumber = createRefFor("questionsNumber")
             val questionText = createRefFor("questionText")
@@ -319,7 +324,7 @@ class MainActivity : ComponentActivity() {
 
         //val question = viewModel.currentQuestion.value!!
 
-        val answers = question.mixQuestions()
+        val answers = question.mixAnswers()
 
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             Text(
@@ -347,25 +352,18 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun AnswerButton(
-        text: String,
-        layoutId: String,
-        isCorrect: Boolean,
-        newQuestionChange: () -> Unit
-    ) {
+    fun AnswerButton(text : String,layoutId : String,isCorrect : Boolean,newQuestionChange : () -> Unit){
         val backgroundColor = remember {
             mutableStateOf(Color.Unspecified)
         }
-        Button(
-            onClick = {
-                newQuestionChange.invoke()
-                //if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value = Color.Red
-            },
+        Button(onClick = {
+            newQuestionChange.invoke()
+            //if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value = Color.Red
+        },
             modifier = Modifier
                 .layoutId(layoutId)
                 .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)
-        ) {
+            colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)) {
             Text(text = text)
         }
     }
