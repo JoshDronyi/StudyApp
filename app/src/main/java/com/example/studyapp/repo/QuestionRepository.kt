@@ -7,7 +7,6 @@ import javax.inject.Singleton
 
 @Singleton
 class QuestionRepository @Inject constructor(
-    private val weatherApi: QuestionsAPI,
     private val databaseDao: QuestionDAO
 ) : RepositoryInterface {
 

@@ -14,7 +14,7 @@ data class Question(
     val wrongAnswer3: String,
     val week : Int
 ) {
-    fun mixQuestions() = listOf<String>(
+    fun mixAnswers() = listOf(
         correctAnswer,
         wrongAnswer1,
         wrongAnswer2,
