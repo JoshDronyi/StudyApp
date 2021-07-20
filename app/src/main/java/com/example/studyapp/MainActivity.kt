@@ -28,9 +28,12 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.constants.LEFT
@@ -337,8 +340,13 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .layoutId("questionText")
             )
-            for(i in 0..3){
-                AnswerButton(text = answers[i],"answer$i",answers[i]==question.correctAnswer,newQuestionChange)
+            for (i in 0..3) {
+                AnswerButton(
+                    text = answers[i],
+                    "answer$i",
+                    answers[i] == question.correctAnswer,
+                    newQuestionChange
+                )
             }
         }
     }
