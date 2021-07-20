@@ -23,7 +23,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Singleton
+    /*@Singleton
     @Provides
     fun provideRetrofit() = Retrofit.Builder()
         .baseUrl(BASE_URL)
@@ -33,7 +33,7 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideAPI(retrofit: Retrofit) = retrofit.create(QuestionsAPI::class.java)
+    fun provideAPI(retrofit: Retrofit) = retrofit.create(QuestionsAPI::class.java)*/
 
     @Singleton
     @Provides
@@ -45,9 +45,9 @@ object AppModule {
     @Singleton
     @Provides
     fun provideRepository(
-        dao: QuestionDAO,
-        api: QuestionsAPI
-    ) = QuestionRepository(api, dao) as RepositoryInterface
+        dao: QuestionDAO
+        //api: QuestionsAPI
+    ) = QuestionRepository(dao) as RepositoryInterface
 
     @Singleton
     @Provides

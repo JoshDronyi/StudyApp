@@ -46,7 +46,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val questionsViewModel: QuestionsViewModel by viewModels()
+    private val questionsViewModel : QuestionsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -324,7 +324,7 @@ class MainActivity : ComponentActivity() {
 
         //val question = viewModel.currentQuestion.value!!
 
-        val answers = question.mixQuestions()
+        val answers = question.mixAnswers()
 
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             Text(
