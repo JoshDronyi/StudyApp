@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -59,9 +63,14 @@ class MainActivity : ComponentActivity() {
     fun AppNavigator() {
         val navController = rememberNavController()
         NavHost(navController = navController, startDestination = "mainView") {
-            composable("mainView") { MyApp(navController = navController) }
+            composable("mainView") {
+                ExampleAnimation {
+                    MyApp(navController = navController)
+                } }
             composable("weekQuestions") {
-                WeekQuestionsScreen(navController)
+                ExampleAnimation {
+                    WeekQuestionsScreen(navController)
+                }
             }
             composable(
                 "questionView"
@@ -69,6 +78,18 @@ class MainActivity : ComponentActivity() {
                 QuestionScreen()
             }
         }
+    }
+
+    @OptIn(ExperimentalAnimationApi::class)
+    @Composable
+    fun ExampleAnimation(content: @Composable () -> Unit) {
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(initialAlpha = 0.3f),
+            exit = fadeOut(),
+            content = content,
+            initiallyVisible = false
+        )
     }
 
     @Composable
@@ -159,14 +180,16 @@ class MainActivity : ComponentActivity() {
             }
         }
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-            Text(
-                text = "Week ${questions[0].week}",
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                modifier = Modifier
-                    .layoutId("weekText")
-                    .padding(16.dp)
-            )
+            questionsViewModel.currentWeek.value?.let {
+                Text(
+                    text = it,
+                    textAlign = TextAlign.Center,
+                    fontSize = 28.sp,
+                    modifier = Modifier
+                        .layoutId("weekText")
+                        .padding(16.dp)
+                )
+            }
             LazyColumn(
                 modifier = Modifier
                     .layoutId("questionList")

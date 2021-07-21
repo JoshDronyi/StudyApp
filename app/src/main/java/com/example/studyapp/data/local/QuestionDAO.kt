@@ -8,13 +8,13 @@ import com.example.studyapp.model.Question
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface QuestionDAO {
+abstract class QuestionDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertQuestions(vararg settings : Question)
+    abstract suspend fun insertQuestions(vararg settings : Question)
 
     @Query("select * from question WHERE week = :week")
-    fun getQuestionsByWeek(week : Int) : Flow<List<Question>>
+    abstract fun getQuestionsByWeek(week : Int) : Flow<List<Question>>
 
     @Query("select * from question WHERE id = :id")
-    fun getQuestionById(id : Int) : Flow<List<Question>>
+    abstract fun getQuestionById(id : Int) : Flow<List<Question>>
 }

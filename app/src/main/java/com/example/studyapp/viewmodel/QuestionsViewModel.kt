@@ -43,10 +43,16 @@ class QuestionsViewModel @Inject constructor(private val repository : Repository
         _questions.postValue(listQuesitons)
     }
 
+
+
     fun getQuestions(week: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        currentWeek.postValue(week)
+        viewModelScope.launch {
             repository.getQuestionsByWeek(week = week).collect {
-                _questions.postValue(it)
+                //_questions.postValue(it)
+                repository.saveQuestionsInDatabase(it).collect { questions ->
+                    _questions.postValue(questions)
+                }
             }
         }
     }
