@@ -254,9 +254,11 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun QuestionScreen(){
-        val currentQuestion by questionsViewModel.currentQuestion.observeAsState(Question.emptyQuestion())
-        QuestionContent(question = currentQuestion) {
-            questionsViewModel.getNewQuestion()
+        val currentQuestion by questionsViewModel.currentQuestion.observeAsState()
+        currentQuestion?.let {
+            QuestionContent(question = it) {
+                questionsViewModel.getNewQuestion()
+            }
         }
     }
 
