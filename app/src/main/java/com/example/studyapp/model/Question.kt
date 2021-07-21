@@ -6,13 +6,14 @@ import androidx.room.PrimaryKey
 @Entity
 data class Question(
     @PrimaryKey
-    var id: Int,
-    val question: String,
-    val correctAnswer: String,
-    val wrongAnswer1: String,
-    val wrongAnswer2: String,
-    val wrongAnswer3: String,
-    val week : Int
+    var id : String = "",
+    val questionNumber : Int = 0,
+    val questionText: String = "",
+    val correctAnswer: String = "",
+    val wrongAnswer1: String = "",
+    val wrongAnswer2: String = "",
+    val wrongAnswer3: String = "",
+    val week : Int = 0
 ) {
     fun mixAnswers() = listOf(
         correctAnswer,

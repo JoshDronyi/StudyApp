@@ -8,6 +8,5 @@ buildscript {
     ext {
         compose_version = '1.0.0-beta09'
         hilt_version = '2.37'
-        retrofitVersion = '2.9.0'
     }
 }

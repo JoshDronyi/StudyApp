@@ -28,18 +28,14 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.navArgument
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
-import com.example.studyapp.util.listQuesitons
 import com.example.studyapp.viewmodel.QuestionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -65,7 +61,7 @@ class MainActivity : ComponentActivity() {
         NavHost(navController = navController, startDestination = "mainView") {
             composable("mainView") { MyApp(navController = navController) }
             composable("weekQuestions") {
-                WeekQuestions(navController)
+                WeekQuestionsScreen(navController)
             }
             composable(
                 "questionView"
@@ -77,7 +73,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MyApp(navController: NavController) {
-        questionsViewModel.setQuestions(listQuesitons())
         StudyAppTheme {
             // A surface container using the 'background' color from the theme
             Surface(color = MaterialTheme.colors.background) {
@@ -132,7 +127,15 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun WeekQuestions(navController: NavController) {
+    fun WeekQuestionsScreen(navController: NavController){
+        val questions by questionsViewModel.questions.observeAsState()
+        questions?.let {
+            WeekQuestions(questions = it,navController = navController)
+        }
+    }
+
+    @Composable
+    fun WeekQuestions(navController: NavController, questions : List<Question>) {
 
         val constraints = ConstraintSet {
             val topText = createRefFor("weekText")
@@ -156,25 +159,20 @@ class MainActivity : ComponentActivity() {
             }
         }
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-            questionsViewModel.currentWeek.value?.let {
-                Text(
-                    text = it,
-                    textAlign = TextAlign.Center,
-                    fontSize = 28.sp,
-                    modifier = Modifier
-                        .layoutId("weekText")
-                        .padding(16.dp)
-                )
-            }
+            Text(
+                text = "Week ${questions[0].week}",
+                textAlign = TextAlign.Center,
+                fontSize = 28.sp,
+                modifier = Modifier
+                    .layoutId("weekText")
+                    .padding(16.dp)
+            )
             LazyColumn(
                 modifier = Modifier
                     .layoutId("questionList")
                     .fillMaxSize()
             ) {
-                items(listQuesitons()) { question ->
-                    val number = remember {
-                        mutableStateOf(question.id)
-                    }
+                items(questions) { question ->
                     Card(
                         elevation = 10.dp,
                         shape = RoundedCornerShape(16.dp),
@@ -190,7 +188,7 @@ class MainActivity : ComponentActivity() {
                                 }
                                 .fillMaxSize()) {
                             Text(
-                                text = "Question number ${number.value}",
+                                text = "Question number ${question.questionNumber}",
                                 modifier = Modifier.padding(
                                     16.dp
                                 )
@@ -219,7 +217,8 @@ class MainActivity : ComponentActivity() {
         ) {
             for (i in start..finish) {
                 WeekButton(weekNumber = i, padding = 8.dp, modifier = Modifier.layoutId(i)) {
-                    questionsViewModel.currentWeek.postValue("Week $i")
+                    questionsViewModel.getQuestions("week$i")
+                    //questionsViewModel.currentWeek.postValue("Week $i")
                     navController.navigate("weekQuestions")
                 }
                 Divider(
@@ -326,30 +325,38 @@ class MainActivity : ComponentActivity() {
 
         //val question = viewModel.currentQuestion.value!!
 
-        val answers = question.mixAnswers()
+        //val answers = question.mixAnswers()
 
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             Text(
-                text = "Question ${question.id}",
+                text = "Question ${question.questionNumber}",
                 textAlign = TextAlign.Center,
                 fontSize = 26.sp,
                 modifier = Modifier.layoutId("questionsNumber")
             )
             Text(
-                text = question.question,
+                text = question.questionText,
                 textAlign = TextAlign.Center,
                 fontSize = 50.sp,
                 modifier = Modifier
                     .layoutId("questionText")
             )
-            for (i in 0..3) {
+            question.mixAnswers().forEachIndexed { index,answer ->
+                AnswerButton(
+                    text = answer,
+                    "answer$index",
+                    answer == question.correctAnswer,
+                    newQuestionChange
+                )
+            }
+            /*for (i in 0..3) {
                 AnswerButton(
                     text = answers[i],
                     "answer$i",
                     answers[i] == question.correctAnswer,
                     newQuestionChange
                 )
-            }
+            }*/
         }
     }
 
