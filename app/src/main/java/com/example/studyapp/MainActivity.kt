@@ -1,6 +1,7 @@
 package com.example.studyapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -36,17 +37,19 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.studyapp.model.ApiState
 import com.example.studyapp.model.Question
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.util.formatWeekString
 import com.example.studyapp.viewmodel.QuestionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val questionsViewModel : QuestionsViewModel by viewModels()
+    private val questionsViewModel: QuestionsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,8 +68,9 @@ class MainActivity : ComponentActivity() {
         NavHost(navController = navController, startDestination = "mainView") {
             composable("mainView") {
                 ExampleAnimation {
-                    MyApp(navController = navController)
-                } }
+                    MyAppScreen(navController = navController)
+                }
+            }
             composable("weekQuestions") {
                 ExampleAnimation {
                     WeekQuestionsScreen(navController)
@@ -75,7 +79,9 @@ class MainActivity : ComponentActivity() {
             composable(
                 "questionView"
             ) {
-                QuestionScreen()
+                ExampleAnimation {
+                    QuestionScreen()
+                }
             }
         }
     }
@@ -93,7 +99,25 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun MyApp(navController: NavController) {
+    fun MyAppScreen(navController: NavController) {
+        val currentQuestion by questionsViewModel.apiState.observeAsState()
+        MyApp()
+        currentQuestion?.let {
+            when (it) {
+                is ApiState.Success -> {
+                    questionsViewModel.changeState(ApiState.Sleep)
+                    questionsViewModel.setQuestions(it.data)
+                    navController.navigate("weekQuestions")
+                }
+                is ApiState.Sleep -> {
+                    Log.e("STATE", it.toString())
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun MyApp() {
         StudyAppTheme {
             // A surface container using the 'background' color from the theme
             Surface(color = MaterialTheme.colors.background) {
@@ -130,16 +154,14 @@ class MainActivity : ComponentActivity() {
                             start = 1,
                             finish = 3,
                             modifier = modifier,
-                            LEFT,
-                            navController
+                            LEFT
                         )
                         Divider(modifier = Modifier.width(3.dp))
                         ButtonColumn(
                             start = 4,
                             finish = 6,
                             modifier = modifier,
-                            id = RIGHT,
-                            navController
+                            id = RIGHT
                         )
                     }
                 }
@@ -148,15 +170,16 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun WeekQuestionsScreen(navController: NavController){
+    fun WeekQuestionsScreen(navController: NavController) {
+        questionsViewModel.changeState(ApiState.Sleep)
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
-            WeekQuestions(questions = it,navController = navController)
+            WeekQuestions(questions = it, navController = navController)
         }
     }
 
     @Composable
-    fun WeekQuestions(navController: NavController, questions : List<Question>) {
+    fun WeekQuestions(navController: NavController, questions: List<Question>) {
 
         val constraints = ConstraintSet {
             val topText = createRefFor("weekText")
@@ -182,7 +205,7 @@ class MainActivity : ComponentActivity() {
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             questionsViewModel.currentWeek.value?.let {
                 Text(
-                    text = it,
+                    text = formatWeekString(it),
                     textAlign = TextAlign.Center,
                     fontSize = 28.sp,
                     modifier = Modifier
@@ -230,8 +253,7 @@ class MainActivity : ComponentActivity() {
         start: Int,
         finish: Int,
         modifier: Modifier,
-        id: String,
-        navController: NavController
+        id: String
     ) {
         Column(
             verticalArrangement = Arrangement.Top,
@@ -242,7 +264,7 @@ class MainActivity : ComponentActivity() {
                 WeekButton(weekNumber = i, padding = 8.dp, modifier = Modifier.layoutId(i)) {
                     questionsViewModel.getQuestions("week$i")
                     //questionsViewModel.currentWeek.postValue("Week $i")
-                    navController.navigate("weekQuestions")
+                    //navController.navigate("weekQuestions")
                 }
                 Divider(
                     modifier = modifier
@@ -275,7 +297,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun QuestionScreen(){
+    fun QuestionScreen() {
         val currentQuestion by questionsViewModel.currentQuestion.observeAsState()
         currentQuestion?.let {
             QuestionContent(question = it) {
@@ -285,7 +307,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun QuestionContent(question : Question, newQuestionChange : () -> Unit) {
+    fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
         val constraints = ConstraintSet {
             val questionNumber = createRefFor("questionsNumber")
             val questionText = createRefFor("questionText")
@@ -346,10 +368,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        //val question = viewModel.currentQuestion.value!!
-
-        //val answers = question.mixAnswers()
-
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             Text(
                 text = "Question ${question.questionNumber}",
@@ -364,38 +382,36 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .layoutId("questionText")
             )
-            question.mixAnswers().forEachIndexed { index,answer ->
+            question.mixAnswers().forEachIndexed { index, answer ->
                 AnswerButton(
                     text = answer,
                     "answer$index",
-                    answer == question.correctAnswer,
+                    //answer == question.correctAnswer,
                     newQuestionChange
                 )
             }
-            /*for (i in 0..3) {
-                AnswerButton(
-                    text = answers[i],
-                    "answer$i",
-                    answers[i] == question.correctAnswer,
-                    newQuestionChange
-                )
-            }*/
         }
     }
 
     @Composable
-    fun AnswerButton(text : String,layoutId : String,isCorrect : Boolean,newQuestionChange : () -> Unit){
+    fun AnswerButton(
+        text: String,
+        layoutId: String,
+        //isCorrect: Boolean,
+        newQuestionChange: () -> Unit
+    ) {
         val backgroundColor = remember {
             mutableStateOf(Color.Unspecified)
         }
-        Button(onClick = {
-            newQuestionChange.invoke()
-            //if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value = Color.Red
-        },
+        Button(
+            onClick = {
+                newQuestionChange.invoke()
+            },
             modifier = Modifier
                 .layoutId(layoutId)
                 .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)) {
+            colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)
+        ) {
             Text(text = text)
         }
     }
