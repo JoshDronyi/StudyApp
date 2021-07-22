@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
@@ -106,7 +107,6 @@ class MainActivity : ComponentActivity() {
         currentQuestion?.let {
             when (it) {
                 is ApiState.Success -> {
-                    questionsViewModel.changeState(ApiState.Sleep)
                     questionsViewModel.setQuestions(it.data)
                     navController.navigate("weekQuestions")
                 }
@@ -172,7 +172,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun WeekQuestionsScreen(navController: NavController) {
-        questionsViewModel.changeState(ApiState.Sleep)
+        questionsViewModel.changeState()
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
             WeekQuestions(questions = it, navController = navController)
@@ -185,14 +185,25 @@ class MainActivity : ComponentActivity() {
         val constraints = ConstraintSet {
             val topText = createRefFor("weekText")
             val listOfQuestions = createRefFor("questionList")
+            val progressText = createRefFor("progressText")
 
             constrain(topText) {
                 top.linkTo(parent.top)
                 start.linkTo(parent.start)
+                end.linkTo(progressText.start)
+                width = Dimension.wrapContent
+                height = Dimension.wrapContent
+            }
+
+            constrain(progressText) {
+                top.linkTo(parent.top)
+                start.linkTo(topText.end)
                 end.linkTo(parent.end)
                 width = Dimension.wrapContent
                 height = Dimension.wrapContent
             }
+
+            createHorizontalChain(topText,progressText,chainStyle = ChainStyle.SpreadInside)
 
             constrain(listOfQuestions) {
                 top.linkTo(topText.bottom)
@@ -202,6 +213,7 @@ class MainActivity : ComponentActivity() {
                 width = Dimension.fillToConstraints
                 height = Dimension.fillToConstraints
             }
+
         }
         ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
             questionsViewModel.currentWeek.value?.let {
@@ -211,6 +223,17 @@ class MainActivity : ComponentActivity() {
                     fontSize = 28.sp,
                     modifier = Modifier
                         .layoutId("weekText")
+                        .padding(16.dp)
+                )
+            }
+            val progress by questionsViewModel.currentProgress.observeAsState()
+            progress?.let {
+                Text(
+                    text = "${it.correctAnswers}/${it.totalQuestions}",
+                    textAlign = TextAlign.Center,
+                    fontSize = 28.sp,
+                    modifier = Modifier
+                        .layoutId("progressText")
                         .padding(16.dp)
                 )
             }

@@ -2,6 +2,7 @@ package com.example.studyapp.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.studyapp.util.QuestionStatus
 
 @Entity
 data class Question(
@@ -13,7 +14,7 @@ data class Question(
     val wrongAnswer1: String = "",
     val wrongAnswer2: String = "",
     val wrongAnswer3: String = "",
-    var questionStatus : Int = 0,
+    var questionStatus : Int,
     val week : Int = 0
 ) {
     fun mixAnswers() = listOf(
@@ -25,16 +26,10 @@ data class Question(
 }
 
 fun List<Question>.generateStudentProgress() : StudentProgress {
-    var correct = 0
-    var week = 0
-    var answeredQuestions = 0
-    forEach {
-        week = it.week
-        if(it.questionStatus==1)
-            correct++
-        if(it.questionStatus==0){
-            answeredQuestions++
-        }
-    }
-    return StudentProgress(week = week,totalQuestions = size,answeredQuestions = answeredQuestions,correctAnswers = correct)
+    return StudentProgress(
+        week = get(0).week,
+        totalQuestions = size,
+        answeredQuestions = count { it.questionStatus != QuestionStatus.NOT_ANSWERED.ordinal },
+        correctAnswers = count { it.questionStatus == QuestionStatus.CORRECT_ANSWER.ordinal }
+    )
 }

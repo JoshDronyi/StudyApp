@@ -62,14 +62,15 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
                 repository.saveQuestionsInDatabase(it)
                 repository.getQuestionsByWeekOnDatabase(week).collect { questions ->
                     _apiState.postValue(questions)
-                    _currentProgress.postValue(questions.data.generateStudentProgress())
+                    val currentProgress = questions.data.generateStudentProgress()
+                    _currentProgress.postValue(currentProgress)
                 }
             }
         }
     }
 
-    fun changeState(sleep: ApiState.Sleep) {
-        _apiState.postValue(sleep)
+    fun changeState() {
+        _apiState.postValue(ApiState.Sleep)
     }
 
     fun updateQuestionStatus(question : Question) {
