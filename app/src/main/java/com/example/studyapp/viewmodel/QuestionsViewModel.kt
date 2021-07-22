@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.model.ApiState
 import com.example.studyapp.model.Question
+import com.example.studyapp.model.StudentProgress
+import com.example.studyapp.model.generateStudentProgress
 import com.example.studyapp.repo.RepositoryInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -27,6 +29,10 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
     private val _currentQuestion = MutableLiveData<Question>()
     val currentQuestion: LiveData<Question>
         get() = _currentQuestion
+
+    private val _currentProgress = MutableLiveData<StudentProgress>()
+    val currentProgress : LiveData<StudentProgress>
+        get() = _currentProgress
 
     val currentWeek = MutableLiveData<String>()
 
@@ -56,6 +62,7 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
                 repository.saveQuestionsInDatabase(it)
                 repository.getQuestionsByWeekOnDatabase(week).collect { questions ->
                     _apiState.postValue(questions)
+                    _currentProgress.postValue(questions.data.generateStudentProgress())
                 }
             }
         }
@@ -63,5 +70,11 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
 
     fun changeState(sleep: ApiState.Sleep) {
         _apiState.postValue(sleep)
+    }
+
+    fun updateQuestionStatus(question : Question) {
+        viewModelScope.launch {
+            repository.saveQuestionsInDatabase(listOf(question))
+        }
     }
 }

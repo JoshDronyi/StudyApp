@@ -42,6 +42,7 @@ import com.example.studyapp.model.Question
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.util.QuestionStatus
 import com.example.studyapp.util.formatWeekString
 import com.example.studyapp.viewmodel.QuestionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
@@ -300,14 +301,12 @@ class MainActivity : ComponentActivity() {
     fun QuestionScreen() {
         val currentQuestion by questionsViewModel.currentQuestion.observeAsState()
         currentQuestion?.let {
-            QuestionContent(question = it) {
-                questionsViewModel.getNewQuestion()
-            }
+            QuestionContent(question = it)
         }
     }
 
     @Composable
-    fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
+    fun QuestionContent(question: Question) {
         val constraints = ConstraintSet {
             val questionNumber = createRefFor("questionsNumber")
             val questionText = createRefFor("questionText")
@@ -386,8 +385,8 @@ class MainActivity : ComponentActivity() {
                 AnswerButton(
                     text = answer,
                     "answer$index",
-                    //answer == question.correctAnswer,
-                    newQuestionChange
+                    answer == question.correctAnswer,
+                    question = question
                 )
             }
         }
@@ -397,15 +396,20 @@ class MainActivity : ComponentActivity() {
     fun AnswerButton(
         text: String,
         layoutId: String,
-        //isCorrect: Boolean,
-        newQuestionChange: () -> Unit
+        isCorrect: Boolean,
+        question: Question
     ) {
         val backgroundColor = remember {
             mutableStateOf(Color.Unspecified)
         }
         Button(
             onClick = {
-                newQuestionChange.invoke()
+                if (isCorrect){
+                    questionsViewModel.updateQuestionStatus(question.apply {
+                        questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
+                    })
+                }
+                questionsViewModel.getNewQuestion()
             },
             modifier = Modifier
                 .layoutId(layoutId)
