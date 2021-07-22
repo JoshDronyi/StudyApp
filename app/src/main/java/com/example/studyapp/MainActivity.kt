@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,11 +17,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -181,7 +179,6 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun WeekQuestions(navController: NavController, questions: List<Question>) {
-
         val constraints = ConstraintSet {
             val topText = createRefFor("weekText")
             val listOfQuestions = createRefFor("questionList")
@@ -203,7 +200,7 @@ class MainActivity : ComponentActivity() {
                 height = Dimension.wrapContent
             }
 
-            createHorizontalChain(topText,progressText,chainStyle = ChainStyle.SpreadInside)
+            createHorizontalChain(topText, progressText, chainStyle = ChainStyle.SpreadInside)
 
             constrain(listOfQuestions) {
                 top.linkTo(topText.bottom)
@@ -242,7 +239,16 @@ class MainActivity : ComponentActivity() {
                     .layoutId("questionList")
                     .fillMaxSize()
             ) {
+
                 items(questions) { question ->
+                    var backgroundColor by remember {
+                        mutableStateOf(Color.White)
+                    }
+                    when (question.questionStatus) {
+                        QuestionStatus.CORRECT_ANSWER.ordinal -> backgroundColor = Color.Green
+                        QuestionStatus.WRONG_ANSWER.ordinal -> backgroundColor = Color.Red
+                        QuestionStatus.NOT_ANSWERED.ordinal -> backgroundColor = Color.White
+                    }
                     Card(
                         elevation = 10.dp,
                         shape = RoundedCornerShape(16.dp),
@@ -256,7 +262,9 @@ class MainActivity : ComponentActivity() {
                                     questionsViewModel.setCurrentQuestion(question = question)
                                     navController.navigate("questionView")
                                 }
-                                .fillMaxSize()) {
+                                .fillMaxSize()
+                                .background(backgroundColor)
+                        ) {
                             Text(
                                 text = "Question number ${question.questionNumber}",
                                 modifier = Modifier.padding(
@@ -264,7 +272,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         }
-
                     }
                 }
             }
@@ -427,12 +434,17 @@ class MainActivity : ComponentActivity() {
         }
         Button(
             onClick = {
-                if (isCorrect){
+                if (isCorrect) {
                     questionsViewModel.updateQuestionStatus(question.apply {
                         questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
                     })
+                } else {
+                    questionsViewModel.updateQuestionStatus(question.apply {
+                        questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
+                    })
                 }
-                questionsViewModel.getNewQuestion()
+                if (!questionsViewModel.getNewQuestion())
+                    onBackPressed()
             },
             modifier = Modifier
                 .layoutId(layoutId)

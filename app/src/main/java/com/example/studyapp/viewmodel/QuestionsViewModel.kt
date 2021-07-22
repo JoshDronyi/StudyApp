@@ -37,13 +37,16 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
     val currentWeek = MutableLiveData<String>()
 
 
-    fun getNewQuestion() {
-        _questions.value?.let { questions ->
+    fun getNewQuestion() : Boolean {
+        return _questions.value?.let { questions ->
             currentQuestion.value?.let { currentQuestion ->
-                if (currentQuestion.questionNumber <= questions.lastIndex)
+                if (currentQuestion.questionNumber <= questions.lastIndex){
                     _currentQuestion.postValue(questions[currentQuestion.questionNumber])
+                    true
+                }else
+                    false
             }
-        }
+        } ?: false
     }
 
     fun setCurrentQuestion(question: Question) {

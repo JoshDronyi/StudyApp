@@ -1,6 +1,7 @@
 package com.example.studyapp.model
 
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.example.studyapp.util.QuestionStatus
 
@@ -14,7 +15,7 @@ data class Question(
     val wrongAnswer1: String = "",
     val wrongAnswer2: String = "",
     val wrongAnswer3: String = "",
-    var questionStatus : Int,
+    var questionStatus : Int = 0,
     val week : Int = 0
 ) {
     fun mixAnswers() = listOf(
