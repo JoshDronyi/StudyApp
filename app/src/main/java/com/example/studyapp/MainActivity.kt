@@ -37,13 +37,14 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.studyapp.model.ApiState
-import com.example.studyapp.model.Question
-import com.example.studyapp.ui.constants.LEFT
-import com.example.studyapp.ui.constants.RIGHT
+import com.example.studyapp.data.model.ApiState
+import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.ui.viewmodel.QuestionsViewModel
+import com.example.studyapp.util.LEFT
+import com.example.studyapp.util.RIGHT
+import com.example.studyapp.util.Screens
 import com.example.studyapp.util.formatWeekString
-import com.example.studyapp.viewmodel.QuestionsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -65,19 +66,19 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppNavigator() {
         val navController = rememberNavController()
-        NavHost(navController = navController, startDestination = "mainView") {
-            composable("mainView") {
+        NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
+            composable(Screens.MainScreen.route) {
                 ExampleAnimation {
                     MyAppScreen(navController = navController)
                 }
             }
-            composable("weekQuestions") {
+            composable(Screens.WeekQuestionsScreen.route) {
                 ExampleAnimation {
                     WeekQuestionsScreen(navController)
                 }
             }
             composable(
-                "questionView"
+                Screens.QuestionScreen.route
             ) {
                 ExampleAnimation {
                     QuestionScreen()
@@ -230,7 +231,7 @@ class MainActivity : ComponentActivity() {
                             Modifier
                                 .clickable {
                                     questionsViewModel.setCurrentQuestion(question = question)
-                                    navController.navigate("questionView")
+                                    navController.navigate(Screens.QuestionScreen.route)
                                 }
                                 .fillMaxSize()) {
                             Text(

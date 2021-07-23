@@ -1,12 +1,12 @@
-package com.example.studyapp.viewmodel
+package com.example.studyapp.ui.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studyapp.model.ApiState
-import com.example.studyapp.model.Question
-import com.example.studyapp.repo.RepositoryInterface
+import com.example.studyapp.data.model.ApiState
+import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.repo.RepositoryInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject

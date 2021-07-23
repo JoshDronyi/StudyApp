@@ -1,9 +1,9 @@
-package com.example.studyapp.repo
+package com.example.studyapp.data.repo
 
 import android.util.Log
-import com.example.studyapp.model.ApiState
 import com.example.studyapp.data.local.QuestionDAO
-import com.example.studyapp.model.Question
+import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.util.formatWeekStringToInt
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -14,7 +14,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
-import java.lang.IllegalStateException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -39,7 +38,12 @@ class QuestionRepository @Inject constructor(
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
+                    Log.e(
+                        "Firebase Question",
+                        "Request for questions from firebase is cancelled due to error: ${
+                            error.toException().printStackTrace()
+                        }"
+                    )
                 }
             }
             ref.addValueEventListener(callback)
