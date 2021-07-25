@@ -46,6 +46,7 @@ import com.example.studyapp.util.RIGHT
 import com.example.studyapp.util.Screens
 import com.example.studyapp.util.formatWeekString
 import dagger.hilt.android.AndroidEntryPoint
+import java.lang.RuntimeException
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -144,6 +145,9 @@ class MainActivity : ComponentActivity() {
                             textAlign = TextAlign.Center
                         )
                     }
+                    Button(onClick = {implementControlledCrash()}) {
+                        Text(text = "Crash Button")
+                    }
                     Spacer(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -168,6 +172,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun implementControlledCrash() {
+        throw RuntimeException("This is the test crash")
     }
 
     @Composable
