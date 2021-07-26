@@ -2,6 +2,7 @@ package com.example.studyapp
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -39,12 +40,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.ui.composables.MyApp
+import com.example.studyapp.ui.composables.WeekButton
 import com.example.studyapp.ui.theme.StudyAppTheme
 import com.example.studyapp.ui.viewmodel.QuestionsViewModel
-import com.example.studyapp.util.LEFT
-import com.example.studyapp.util.RIGHT
-import com.example.studyapp.util.Screens
-import com.example.studyapp.util.formatWeekString
+import com.example.studyapp.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import java.lang.RuntimeException
 
@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppNavigator() {
         val navController = rememberNavController()
+
         NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
             composable(Screens.MainScreen.route) {
                 ExampleAnimation {
@@ -103,79 +104,37 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyAppScreen(navController: NavController) {
         val currentQuestion by questionsViewModel.apiState.observeAsState()
-        MyApp()
+        MyApp { week ->
+            when (week) {
+                WK1 -> { questionsViewModel.getQuestions(WK1) }
+                WK2 -> { questionsViewModel.getQuestions(WK2) }
+                WK3 -> { questionsViewModel.getQuestions(WK3) }
+                WK4 -> { questionsViewModel.getQuestions(WK4) }
+                WK5 -> { questionsViewModel.getQuestions(WK5) }
+                WK6 -> { questionsViewModel.getQuestions(WK6) }
+                else -> {
+                    Toast.makeText(
+                        navController.context,
+                        "Please select questions from weeks 1-6",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
         currentQuestion?.let {
             when (it) {
                 is ApiState.Success -> {
                     questionsViewModel.changeState(ApiState.Sleep)
                     questionsViewModel.setQuestions(it.data)
-                    navController.navigate("weekQuestions")
+                    Log.e("JOSH","Success loading questions.")
+                    navController.navigate(Screens.WeekQuestionsScreen.route)
                 }
                 is ApiState.Sleep -> {
                     Log.e("STATE", it.toString())
                 }
             }
         }
-    }
-
-    @Composable
-    fun MyApp() {
-        StudyAppTheme {
-            // A surface container using the 'background' color from the theme
-            Surface(color = MaterialTheme.colors.background) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(8.dp)
-                        .padding(top = 60.dp),
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(200.dp)
-                            .fillMaxWidth(0.75f)
-                            .border(2.dp, Color.Black, RoundedCornerShape(15)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Android Quiz",
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Button(onClick = {implementControlledCrash()}) {
-                        Text(text = "Crash Button")
-                    }
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp)
-                    )
-                    val modifier = Modifier.width(200.dp)
-                    Row {
-                        ButtonColumn(
-                            start = 1,
-                            finish = 3,
-                            modifier = modifier,
-                            LEFT
-                        )
-                        Divider(modifier = Modifier.width(3.dp))
-                        ButtonColumn(
-                            start = 4,
-                            finish = 6,
-                            modifier = modifier,
-                            id = RIGHT
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun implementControlledCrash() {
-        throw RuntimeException("This is the test crash")
     }
 
     @Composable
@@ -254,55 +213,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-
-    @Composable
-    fun ButtonColumn(
-        start: Int,
-        finish: Int,
-        modifier: Modifier,
-        id: String
-    ) {
-        Column(
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = modifier.layoutId(id)
-        ) {
-            for (i in start..finish) {
-                WeekButton(weekNumber = i, padding = 8.dp, modifier = Modifier.layoutId(i)) {
-                    questionsViewModel.getQuestions("week$i")
-                    //questionsViewModel.currentWeek.postValue("Week $i")
-                    //navController.navigate("weekQuestions")
-                }
-                Divider(
-                    modifier = modifier
-                        .width(150.dp)
-                )
-            }
-        }
-
-    }
-
-    @Composable
-    fun WeekButton(weekNumber: Int, padding: Dp, modifier: Modifier, clickReaction: () -> Unit) {
-        Button(
-            onClick = {
-                clickReaction.invoke()
-            },
-            modifier = modifier
-                .width(150.dp)
-                .padding(padding)
-        ) {
-            Text(
-                text = "Week $weekNumber",
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(padding),
-                textAlign = TextAlign.Center
-            )
-        }
-
     }
 
     @Composable
