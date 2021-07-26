@@ -11,9 +11,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import java.lang.IllegalStateException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -56,12 +54,7 @@ class QuestionRepository @Inject constructor(
     }
 
     override suspend fun getQuestionsByWeekOnDatabase(week: String) = flow {
-        databaseDao.getQuestionsByWeek(formatWeekStringToInt(week)).collect { data ->
-            data.forEach {
-                Log.e("Question", it.questionText)
-            }
-            emit(ApiState.Success(data))
-        }
+        emit(databaseDao.getQuestionsByWeek(formatWeekStringToInt(week)).first())
     }
 
 

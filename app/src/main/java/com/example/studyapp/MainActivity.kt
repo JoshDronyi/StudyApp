@@ -38,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.model.ApiState
 import com.example.studyapp.model.Question
+import com.example.studyapp.model.generateStudentProgress
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
@@ -105,7 +106,6 @@ class MainActivity : ComponentActivity() {
         currentQuestion?.let {
             when (it) {
                 is ApiState.Success -> {
-                    questionsViewModel.setQuestions(it.data)
                     navController.navigate("weekQuestions")
                 }
                 is ApiState.Sleep -> {
@@ -174,6 +174,7 @@ class MainActivity : ComponentActivity() {
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
             WeekQuestions(questions = it, navController = navController)
+            questionsViewModel.setCurrentProgress(it.generateStudentProgress())
         }
     }
 
@@ -455,11 +456,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-}
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    //AppNavigator()
 }

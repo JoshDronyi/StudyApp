@@ -1,7 +1,6 @@
 package com.example.studyapp.model
 
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.example.studyapp.util.QuestionStatus
 
