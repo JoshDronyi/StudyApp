@@ -6,8 +6,9 @@ import com.example.studyapp.model.Question
 import com.example.studyapp.model.StudentProgress
 
 @Database(
-    entities = [Question::class,StudentProgress::class],
-    version = 1
+    entities = [Question::class, StudentProgress::class],
+    version = 2,
+    exportSchema = true
 )
 abstract class Database : RoomDatabase() {
     abstract fun questionDAO(): QuestionDAO

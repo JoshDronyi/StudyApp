@@ -2,6 +2,8 @@ package com.example.studyapp
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.studyapp.data.local.Database
 import com.example.studyapp.data.local.QuestionDAO
 import com.example.studyapp.repo.QuestionRepository
@@ -23,7 +25,10 @@ object AppModule {
     @Provides
     fun provideDatabase(
         @ApplicationContext context: Context
-    ) = Room.databaseBuilder(context, Database::class.java, DATABASE_NAME).build()
+    ) = Room
+        .databaseBuilder(context, Database::class.java, DATABASE_NAME)
+        .addMigrations(migration_1_2)
+        .build()
 
 
     @Singleton
@@ -31,7 +36,7 @@ object AppModule {
     fun provideRepository(
         dao: QuestionDAO,
         firebaseDatabase: FirebaseDatabase
-    ) = QuestionRepository(dao,firebaseDatabase) as RepositoryInterface
+    ) = QuestionRepository(dao, firebaseDatabase) as RepositoryInterface
 
     @Singleton
     @Provides
@@ -42,4 +47,13 @@ object AppModule {
     @Singleton
     @Provides
     fun firebaseDatabase() = FirebaseDatabase.getInstance()
+
+    private val migration_1_2 = object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            database.execSQL(
+                "CREATE TABLE `StudentProgress` (`week` INTEGER, `totalQuestions` INTEGER, 'answeredQuestions' INTEGER, 'correctAnswers' INTEGER " +
+                        "PRIMARY KEY(`week`))"
+            )
+        }
+    }
 }
