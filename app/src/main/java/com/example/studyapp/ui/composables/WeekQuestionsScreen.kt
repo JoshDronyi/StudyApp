@@ -15,6 +15,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -23,10 +24,8 @@ import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.viewmodel.QuestionsViewModel
 
-
-
 @Composable
-fun WeekQuestions(questionsViewModel: QuestionsViewModel, questions: List<Question>, navigation: (String) -> Unit) {
+fun WeekQuestions(currentWeek: String, questions: List<Question>, navigation: (Question) -> Unit) {
 
     val constraints = ConstraintSet {
         val topText = createRefFor("weekText")
@@ -50,16 +49,14 @@ fun WeekQuestions(questionsViewModel: QuestionsViewModel, questions: List<Questi
         }
     }
     ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-        questionsViewModel.currentWeek.value?.let {
-            Text(
-                text = it,
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                modifier = Modifier
-                    .layoutId("weekText")
-                    .padding(16.dp)
-            )
-        }
+        Text(
+            text = currentWeek,
+            textAlign = TextAlign.Center,
+            fontSize = 28.sp,
+            modifier = Modifier
+                .layoutId("weekText")
+                .padding(16.dp)
+        )
         LazyColumn(
             modifier = Modifier
                 .layoutId("questionList")
@@ -76,8 +73,7 @@ fun WeekQuestions(questionsViewModel: QuestionsViewModel, questions: List<Questi
                     Box(
                         Modifier
                             .clickable {
-                                questionsViewModel.setCurrentQuestion(question = question)
-                                navigation.invoke("questionView")
+                                navigation.invoke(question)
                             }
                             .fillMaxSize()) {
                         Text(

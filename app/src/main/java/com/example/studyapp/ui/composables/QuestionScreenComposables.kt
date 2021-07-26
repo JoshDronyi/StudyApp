@@ -22,8 +22,6 @@ import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.viewmodel.QuestionsViewModel
 
-
-
 @Composable
 fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
     val constraints = ConstraintSet {
@@ -86,10 +84,6 @@ fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
         }
     }
 
-    //val question = viewModel.currentQuestion.value!!
-
-    //val answers = question.mixAnswers()
-
     ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
         Text(
             text = "Question ${question.questionNumber}",
@@ -107,8 +101,8 @@ fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
         question.mixAnswers().forEachIndexed { index, answer ->
             AnswerButton(
                 text = answer,
-                "answer$index",
-                answer == question.correctAnswer,
+                layoutId = "answer$index",
+                isCorrect = answer == question.correctAnswer,
                 newQuestionChange
             )
         }
@@ -127,7 +121,8 @@ fun AnswerButton(
     }
     Button(
         onClick = {
-            //if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value = Color.Red
+            if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value =
+                Color.Red
             newQuestionChange.invoke()
         },
         modifier = Modifier
