@@ -1,4 +1,4 @@
-package com.example.studyapp.repo
+package com.example.studyapp.data.repo
 
 import android.util.Log
 import com.example.studyapp.model.ApiState
@@ -37,7 +37,12 @@ class QuestionRepository @Inject constructor(
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    TODO("Not yet implemented")
+                    Log.e(
+                        "Firebase Question",
+                        "Request for questions from firebase is cancelled due to error: ${
+                            error.toException().printStackTrace()
+                        }"
+                    )
                 }
             }
             ref.addValueEventListener(callback)

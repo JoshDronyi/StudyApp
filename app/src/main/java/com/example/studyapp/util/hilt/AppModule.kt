@@ -1,4 +1,4 @@
-package com.example.studyapp
+package com.example.studyapp.util.hilt
 
 import android.content.Context
 import androidx.room.Room
@@ -6,8 +6,8 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.studyapp.data.local.Database
 import com.example.studyapp.data.local.QuestionDAO
-import com.example.studyapp.repo.QuestionRepository
-import com.example.studyapp.repo.RepositoryInterface
+import com.example.studyapp.data.repo.QuestionRepository
+import com.example.studyapp.data.repo.RepositoryInterface
 import com.example.studyapp.util.DATABASE_NAME
 import com.google.firebase.database.FirebaseDatabase
 import dagger.Module

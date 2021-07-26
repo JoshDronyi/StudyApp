@@ -2,6 +2,7 @@ package com.example.studyapp
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -13,9 +14,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -36,12 +34,18 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.studyapp.data.model.ApiState
+import com.example.studyapp.ui.composables.MyApp
+import com.example.studyapp.ui.composables.QuestionContent
+import com.example.studyapp.ui.composables.WeekQuestions
 import com.example.studyapp.model.ApiState
 import com.example.studyapp.model.Question
 import com.example.studyapp.model.generateStudentProgress
 import com.example.studyapp.ui.constants.LEFT
 import com.example.studyapp.ui.constants.RIGHT
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.ui.viewmodel.QuestionsViewModel
+import com.example.studyapp.util.*
 import com.example.studyapp.util.QuestionStatus
 import com.example.studyapp.util.formatWeekString
 import com.example.studyapp.viewmodel.QuestionsViewModel
@@ -66,22 +70,23 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppNavigator() {
         val navController = rememberNavController()
-        NavHost(navController = navController, startDestination = "mainView") {
-            composable("mainView") {
+
+        NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
+            composable(Screens.MainScreen.route) {
                 ExampleAnimation {
                     MyAppScreen(navController = navController)
                 }
             }
-            composable("weekQuestions") {
+            composable(Screens.WeekQuestionsScreen.route) {
                 ExampleAnimation {
-                    WeekQuestionsScreen(navController)
+                    WeekQuestionList(navController)
                 }
             }
             composable(
-                "questionView"
+                Screens.QuestionScreen.route
             ) {
                 ExampleAnimation {
-                    QuestionScreen()
+                    QuestionDetail()
                 }
             }
         }
@@ -102,11 +107,40 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyAppScreen(navController: NavController) {
         val currentQuestion by questionsViewModel.apiState.observeAsState()
-        MyApp()
+        MyApp { week ->
+            when (week) {
+                WK1 -> {
+                    questionsViewModel.getQuestions(WK1)
+                }
+                WK2 -> {
+                    questionsViewModel.getQuestions(WK2)
+                }
+                WK3 -> {
+                    questionsViewModel.getQuestions(WK3)
+                }
+                WK4 -> {
+                    questionsViewModel.getQuestions(WK4)
+                }
+                WK5 -> {
+                    questionsViewModel.getQuestions(WK5)
+                }
+                WK6 -> {
+                    questionsViewModel.getQuestions(WK6)
+                }
+                else -> {
+                    Toast.makeText(
+                        navController.context,
+                        "Please select questions from weeks 1-6",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+
         currentQuestion?.let {
             when (it) {
                 is ApiState.Success -> {
-                    navController.navigate("weekQuestions")
+                    navController.navigate(Screens.WeekQuestionsScreen.route)
                 }
                 is ApiState.Sleep -> {
                     Log.e("STATE", it.toString())
@@ -116,61 +150,8 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun MyApp() {
-        StudyAppTheme {
-            // A surface container using the 'background' color from the theme
-            Surface(color = MaterialTheme.colors.background) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(8.dp)
-                        .padding(top = 60.dp),
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(200.dp)
-                            .fillMaxWidth(0.75f)
-                            .border(2.dp, Color.Black, RoundedCornerShape(15)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Android Quiz",
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(250.dp)
-                    )
-                    val modifier = Modifier.width(200.dp)
-                    Row {
-                        ButtonColumn(
-                            start = 1,
-                            finish = 3,
-                            modifier = modifier,
-                            LEFT
-                        )
-                        Divider(modifier = Modifier.width(3.dp))
-                        ButtonColumn(
-                            start = 4,
-                            finish = 6,
-                            modifier = modifier,
-                            id = RIGHT
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    fun WeekQuestionsScreen(navController: NavController) {
-        questionsViewModel.changeState()
+    fun WeekQuestionList(navController: NavController) {
+        questionsViewModel.changeState(ApiState.Sleep)
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
             WeekQuestions(questions = it, navController = navController)
@@ -328,11 +309,22 @@ class MainActivity : ComponentActivity() {
 
     }
 
+            WeekQuestions(
+                questions = it,
+                currentWeek = questionsViewModel.currentWeek.value.toString()
+            ) { question ->
+                questionsViewModel.setCurrentQuestion(question = question)
+                navController.navigate(Screens.QuestionScreen.route)
+            }
+        }
+    }
     @Composable
-    fun QuestionScreen() {
+    fun QuestionDetail() {
         val currentQuestion by questionsViewModel.currentQuestion.observeAsState()
         currentQuestion?.let {
-            QuestionContent(question = it)
+            QuestionContent(question = it) {
+                questionsViewModel.getNewQuestion()
+            }
         }
     }
 
@@ -456,4 +448,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-}

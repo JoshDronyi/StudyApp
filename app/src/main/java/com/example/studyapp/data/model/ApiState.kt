@@ -1,4 +1,4 @@
-package com.example.studyapp.model
+package com.example.studyapp.data.model
 
 sealed class ApiState<out T> {
     object Success: ApiState<Nothing>()
