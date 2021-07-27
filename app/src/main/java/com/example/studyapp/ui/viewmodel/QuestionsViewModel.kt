@@ -5,19 +5,16 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studyapp.model.ApiState
-import com.example.studyapp.model.Question
-import com.example.studyapp.model.StudentProgress
-import com.example.studyapp.model.generateStudentProgress
-import com.example.studyapp.repo.RepositoryInterface
+import com.example.studyapp.data.model.ApiState
+import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.StudentProgress
+import com.example.studyapp.data.repo.RepositoryInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 
 @HiltViewModel
@@ -45,8 +42,8 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
     fun getNewQuestion(): Boolean {
         return _questions.value?.let { questions ->
             currentQuestion.value?.let { currentQuestion ->
-                Log.e("Question Number",currentQuestion.questionNumber.toString())
-                Log.e("Last Number",questions.lastIndex.toString())
+                Log.e("Question Number", currentQuestion.questionNumber.toString())
+                Log.e("Last Number", questions.lastIndex.toString())
                 if (currentQuestion.questionNumber <= questions.lastIndex) {
                     _currentQuestion.postValue(questions[currentQuestion.questionNumber])
                     true
@@ -59,15 +56,16 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
     fun setCurrentQuestion(question: Question) = _currentQuestion.postValue(question)
 
 
-    fun setCurrentProgress(currentProgress : StudentProgress) = _currentProgress.postValue(currentProgress)
+    fun setCurrentProgress(currentProgress: StudentProgress) =
+        _currentProgress.postValue(currentProgress)
 
     fun getQuestions(week: String) {
         currentWeek.postValue(week)
         viewModelScope.launch(Dispatchers.IO) {
             repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
-                Log.e("Questions",dataFromTheInternet.toString())
+                Log.e("Questions", dataFromTheInternet.toString())
                 val questions = repository.getQuestionsByWeekOnDatabase(week).first()
-                Log.e("Questions DB",questions.toString())
+                Log.e("Questions DB", questions.toString())
                 if (questions.isNotEmpty())
                     dataFromTheInternet.mapIndexed { index, internet ->
                         internet.questionStatus = questions[index].questionStatus
