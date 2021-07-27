@@ -1,16 +1,20 @@
 package com.example.studyapp.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.RepositoryInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collect
 
 
 @HiltViewModel
@@ -28,40 +32,58 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
     val currentQuestion: LiveData<Question>
         get() = _currentQuestion
 
+    private val _currentProgress = MutableLiveData<StudentProgress>()
+    val currentProgress: LiveData<StudentProgress>
+        get() = _currentProgress
+
     val currentWeek = MutableLiveData<String>()
 
 
-    fun getNewQuestion() {
-        _questions.value?.let { questions ->
+    fun getNewQuestion(): Boolean {
+        return _questions.value?.let { questions ->
             currentQuestion.value?.let { currentQuestion ->
-                if (currentQuestion.questionNumber <= questions.lastIndex)
+                Log.e("Question Number", currentQuestion.questionNumber.toString())
+                Log.e("Last Number", questions.lastIndex.toString())
+                if (currentQuestion.questionNumber <= questions.lastIndex) {
                     _currentQuestion.postValue(questions[currentQuestion.questionNumber])
+                    true
+                } else
+                    false
             }
-        }
+        } ?: false
     }
 
-    fun setCurrentQuestion(question: Question) {
-        _currentQuestion.postValue(question)
-    }
+    fun setCurrentQuestion(question: Question) = _currentQuestion.postValue(question)
 
-    fun setQuestions(listQuestions: List<Question>) {
-        _questions.postValue(listQuestions)
-    }
 
+    fun setCurrentProgress(currentProgress: StudentProgress) =
+        _currentProgress.postValue(currentProgress)
 
     fun getQuestions(week: String) {
         currentWeek.postValue(week)
-        viewModelScope.launch {
-            repository.getQuestionsByWeek(week = week).collect {
-                repository.saveQuestionsInDatabase(it)
-                repository.getQuestionsByWeekOnDatabase(week).collect { questions ->
-                    _apiState.postValue(questions)
-                }
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
+                Log.e("Questions", dataFromTheInternet.toString())
+                val questions = repository.getQuestionsByWeekOnDatabase(week).first()
+                Log.e("Questions DB", questions.toString())
+                if (questions.isNotEmpty())
+                    dataFromTheInternet.mapIndexed { index, internet ->
+                        internet.questionStatus = questions[index].questionStatus
+                    }
+                repository.saveQuestionsInDatabase(dataFromTheInternet)
+                _apiState.postValue(ApiState.Success)
+                _questions.postValue(dataFromTheInternet)
             }
         }
     }
 
-    fun changeState(sleep: ApiState.Sleep) {
-        _apiState.postValue(sleep)
+    fun changeState() {
+        _apiState.postValue(ApiState.Sleep)
+    }
+
+    fun updateQuestionStatus(question: Question) {
+        viewModelScope.launch {
+            repository.saveQuestionsInDatabase(listOf(question))
+        }
     }
 }

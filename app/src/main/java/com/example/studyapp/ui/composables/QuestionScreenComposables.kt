@@ -6,8 +6,6 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -21,9 +19,14 @@ import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.viewmodel.QuestionsViewModel
+import com.example.studyapp.util.QuestionStatus
 
 @Composable
-fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
+fun QuestionContent(
+    question: Question,
+    questionsViewModel: QuestionsViewModel,
+    navigate: (Boolean) -> Unit
+) {
     val constraints = ConstraintSet {
         val questionNumber = createRefFor("questionsNumber")
         val questionText = createRefFor("questionText")
@@ -101,9 +104,10 @@ fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
         question.mixAnswers().forEachIndexed { index, answer ->
             AnswerButton(
                 text = answer,
-                layoutId = "answer$index",
-                isCorrect = answer == question.correctAnswer,
-                newQuestionChange
+                "answer$index",
+                question,
+                questionsViewModel,
+                navigate
             )
         }
     }
@@ -113,17 +117,30 @@ fun QuestionContent(question: Question, newQuestionChange: () -> Unit) {
 fun AnswerButton(
     text: String,
     layoutId: String,
-    isCorrect: Boolean,
-    newQuestionChange: () -> Unit
+    question: Question,
+    questionsViewModel: QuestionsViewModel,
+    navigate: (Boolean) -> Unit
 ) {
     val backgroundColor = remember {
         mutableStateOf(Color.Unspecified)
     }
     Button(
         onClick = {
-            if (isCorrect) backgroundColor.value = Color.Green else backgroundColor.value =
-                Color.Red
-            newQuestionChange.invoke()
+            if (text == question.correctAnswer) {
+                questionsViewModel.updateQuestionStatus(question.apply {
+                    questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
+                })
+            } else {
+                questionsViewModel.updateQuestionStatus(question.apply {
+                    questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
+                })
+            }
+            if (!questionsViewModel.getNewQuestion())
+                navigate.invoke(false)
+
+            questionsViewModel.getNewQuestion()
+
+            navigate.invoke(true)
         },
         modifier = Modifier
             .layoutId(layoutId)
@@ -133,3 +150,4 @@ fun AnswerButton(
         Text(text = text)
     }
 }
+

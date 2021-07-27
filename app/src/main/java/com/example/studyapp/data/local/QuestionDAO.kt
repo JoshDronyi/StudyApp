@@ -12,7 +12,7 @@ abstract class QuestionDAO {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertQuestions(vararg question : Question)
 
-    @Query("select * from question WHERE week = :week")
+    @Query("select * from question WHERE week = :week ORDER BY id ASC")
     abstract fun getQuestionsByWeek(week : Int) : Flow<List<Question>>
 
     @Query("select * from question WHERE id = :id")

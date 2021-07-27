@@ -10,12 +10,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -64,7 +65,7 @@ class MainActivity : ComponentActivity() {
                 Screens.QuestionScreen.route
             ) {
                 ExampleAnimation {
-                    QuestionDetail()
+                    QuestionScreen()
                 }
             }
         }
@@ -106,11 +107,13 @@ class MainActivity : ComponentActivity() {
                     questionsViewModel.getQuestions(WK6)
                 }
                 else -> {
-                    Toast.makeText(
-                        navController.context,
-                        "Please select questions from weeks 1-6",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    Toast
+                        .makeText(
+                            navController.context,
+                            "Please select questions from weeks 1-6",
+                            Toast.LENGTH_LONG
+                        )
+                        .show()
                 }
             }
         }
@@ -118,13 +121,13 @@ class MainActivity : ComponentActivity() {
         currentQuestion?.let {
             when (it) {
                 is ApiState.Success -> {
-                    questionsViewModel.changeState(ApiState.Sleep)
-                    questionsViewModel.setQuestions(it.data)
-                    Log.e("JOSH", "Success loading questions.")
                     navController.navigate(Screens.WeekQuestionsScreen.route)
                 }
                 is ApiState.Sleep -> {
                     Log.e("STATE", it.toString())
+                }
+                else -> {
+                    Log.e("STATE ERROR", "Unrecognized Api State.")
                 }
             }
         }
@@ -132,31 +135,30 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun WeekQuestionList(navController: NavController) {
-        questionsViewModel.changeState(ApiState.Sleep)
+        questionsViewModel.changeState()
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
-            WeekQuestions(
-                questions = it,
-                currentWeek = questionsViewModel.currentWeek.value.toString()
-            ) { question ->
-                questionsViewModel.setCurrentQuestion(question = question)
-                navController.navigate(Screens.QuestionScreen.route)
-            }
+            WeekQuestions(questions = it, navController = navController, questionsViewModel = questionsViewModel)
+            questionsViewModel.setCurrentProgress(it.generateStudentProgress())
         }
     }
+
     @Composable
-    fun QuestionDetail() {
+    fun QuestionScreen() {
         val currentQuestion by questionsViewModel.currentQuestion.observeAsState()
         currentQuestion?.let {
-            QuestionContent(question = it) {
-                questionsViewModel.getNewQuestion()
+            QuestionContent(question = it, questionsViewModel) { processCompleted ->
+                if (!processCompleted) {
+                    onBackPressed()
+                }
             }
         }
     }
+
+
 }
 
-
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
     //AppNavigator()

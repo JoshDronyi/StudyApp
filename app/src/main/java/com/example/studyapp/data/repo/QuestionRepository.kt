@@ -3,19 +3,16 @@ package com.example.studyapp.data.repo
 import android.util.Log
 import com.example.studyapp.data.local.QuestionDAO
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.util.formatWeekStringToInt
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
+import javax.security.auth.callback.Callback
 
 @Singleton
 class QuestionRepository @Inject constructor(
@@ -48,11 +45,15 @@ class QuestionRepository @Inject constructor(
             }
             ref.addValueEventListener(callback)
             awaitClose {
-                ref.removeEventListener(callback)
+               removeReference(ref,callback)
             }
         } catch (e: IllegalStateException) {
             Log.e("EXCEPTION", e.message.toString())
         }
+    }
+
+    private fun removeReference(ref:DatabaseReference, callback: ValueEventListener){
+        ref.removeEventListener(callback)
     }
 
     override suspend fun saveQuestionsInDatabase(questions: List<Question>) {
@@ -60,12 +61,7 @@ class QuestionRepository @Inject constructor(
     }
 
     override suspend fun getQuestionsByWeekOnDatabase(week: String) = flow {
-        databaseDao.getQuestionsByWeek(formatWeekStringToInt(week)).collect { data ->
-            data.forEach {
-                Log.e("Question", it.questionText)
-            }
-            emit(ApiState.Success(data))
-        }
+        emit(databaseDao.getQuestionsByWeek(formatWeekStringToInt(week)).first())
     }
 
 
