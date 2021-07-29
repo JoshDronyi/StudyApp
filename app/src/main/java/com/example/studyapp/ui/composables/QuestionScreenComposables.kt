@@ -1,19 +1,21 @@
 package com.example.studyapp.ui.composables
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
@@ -35,7 +37,7 @@ fun QuestionContent(
         val buttonAnswer3 = createRefFor("answer2")
         val buttonAnswer4 = createRefFor("answer3")
 
-        val guideline = createGuidelineFromTop(0.6f)
+        val guideline = createGuidelineFromTop(0.5f)
 
         constrain(questionNumber) {
             top.linkTo(parent.top)
@@ -58,49 +60,87 @@ fun QuestionContent(
             start.linkTo(parent.start)
             end.linkTo(buttonAnswer2.start)
             bottom.linkTo(buttonAnswer3.top)
-            width = Dimension.fillToConstraints
-            height = Dimension.fillToConstraints
+            width = Dimension.wrapContent
+            height = Dimension.wrapContent
         }
         constrain(buttonAnswer2) {
             top.linkTo(guideline)
             start.linkTo(buttonAnswer1.end)
             end.linkTo(parent.end)
             bottom.linkTo(buttonAnswer4.top)
-            width = Dimension.fillToConstraints
-            height = Dimension.fillToConstraints
+            width = Dimension.wrapContent
+            height = Dimension.wrapContent
         }
         constrain(buttonAnswer3) {
             top.linkTo(buttonAnswer1.bottom)
             start.linkTo(parent.start)
             end.linkTo(buttonAnswer4.start)
             bottom.linkTo(parent.bottom)
-            width = Dimension.fillToConstraints
-            height = Dimension.fillToConstraints
+            width = Dimension.wrapContent
+            height = Dimension.wrapContent
         }
         constrain(buttonAnswer4) {
             top.linkTo(buttonAnswer2.bottom)
             start.linkTo(buttonAnswer3.end)
             end.linkTo(parent.end)
             bottom.linkTo(parent.bottom)
-            width = Dimension.fillToConstraints
-            height = Dimension.fillToConstraints
+            width = Dimension.wrapContent
+            height = Dimension.wrapContent
         }
+
+        createHorizontalChain(buttonAnswer1, buttonAnswer2, chainStyle = ChainStyle.Spread)
+        createHorizontalChain(buttonAnswer3, buttonAnswer4, chainStyle = ChainStyle.Spread)
     }
 
-    ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-        Text(
-            text = "Question ${question.questionNumber}",
-            textAlign = TextAlign.Center,
-            fontSize = 26.sp,
-            modifier = Modifier.layoutId("questionsNumber")
-        )
-        Text(
-            text = question.questionText,
-            textAlign = TextAlign.Center,
-            fontSize = 50.sp,
+    ConstraintLayout(
+        constraintSet = constraints,
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colors.background)
+            .padding(24.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .layoutId("questionsNumber")
+                .fillMaxWidth()
+                .fillMaxHeight(0.1f)
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Question ${question.questionNumber}",
+                textAlign = TextAlign.Center,
+                fontSize = 40.sp
+            )
+        }
+
+        Card(
+            elevation = 8.dp,
+            backgroundColor = MaterialTheme.colors.surface,
             modifier = Modifier
                 .layoutId("questionText")
-        )
+                .fillMaxWidth(.75f)
+                .fillMaxHeight(.4f)
+                .border(3.dp, MaterialTheme.colors.primaryVariant, RoundedCornerShape(25.dp)),
+            shape = RoundedCornerShape(25.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = question.questionText,
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp
+                )
+            }
+        }
+
+        //Makes 4 Answer buttons.
         question.mixAnswers().forEachIndexed { index, answer ->
             AnswerButton(
                 text = answer,
@@ -144,7 +184,9 @@ fun AnswerButton(
         },
         modifier = Modifier
             .layoutId(layoutId)
-            .padding(16.dp),
+            .fillMaxHeight(.10f)
+            .defaultMinSize(minWidth = 150.dp, minHeight = 50.dp)
+            .fillMaxWidth(.3f),
         colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)
     ) {
         Text(text = text)

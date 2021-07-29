@@ -138,7 +138,11 @@ class MainActivity : ComponentActivity() {
         questionsViewModel.changeState()
         val questions by questionsViewModel.questions.observeAsState()
         questions?.let {
-            WeekQuestions(questions = it, navController = navController, questionsViewModel = questionsViewModel)
+            WeekQuestions(
+                questions = it,
+                navController = navController,
+                questionsViewModel = questionsViewModel
+            )
             questionsViewModel.setCurrentProgress(it.generateStudentProgress())
         }
     }
@@ -156,10 +160,14 @@ class MainActivity : ComponentActivity() {
     }
 
 
-}
+    @Preview(showBackground = true, showSystemUi = true)
+    @Composable
+    fun DefaultPreview() {
+        val question = questionsViewModel.questions.value?.first()
+        question?.let {
+            QuestionContent(it, questionsViewModel = questionsViewModel) {
 
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    //AppNavigator()
+            }
+        }
+    }
 }

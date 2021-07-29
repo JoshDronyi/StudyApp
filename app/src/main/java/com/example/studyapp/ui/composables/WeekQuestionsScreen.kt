@@ -3,16 +3,16 @@ package com.example.studyapp.ui.composables
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layoutId
@@ -38,114 +38,108 @@ fun WeekQuestions(
     questions: List<Question>,
     questionsViewModel: QuestionsViewModel
 ) {
+    val progress by questionsViewModel.currentProgress.observeAsState()
 
-    val constraints = ConstraintSet {
-        val topText = createRefFor("weekText")
-        val listOfQuestions = createRefFor("questionList")
-        val progressText = createRefFor("progressText")
-
-        constrain(topText) {
-            top.linkTo(parent.top)
-            start.linkTo(parent.start)
-            end.linkTo(progressText.start)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-
-        constrain(progressText) {
-            top.linkTo(parent.top)
-            start.linkTo(topText.end)
-            end.linkTo(parent.end)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-
-        createHorizontalChain(topText, progressText, chainStyle = ChainStyle.SpreadInside)
-
-        constrain(listOfQuestions) {
-            top.linkTo(topText.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            bottom.linkTo(parent.bottom)
-            width = Dimension.fillToConstraints
-            height = Dimension.fillToConstraints
-        }
-
-    }
-
-    ConstraintLayout(constraintSet = constraints, Modifier.fillMaxSize()) {
-        val progress by questionsViewModel.currentProgress.observeAsState()
-
-        questionsViewModel.currentWeek.value?.let {
-            Text(
-                text = formatWeekString(it),
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                modifier = Modifier
-                    .layoutId("weekText")
-                    .padding(16.dp)
-            )
-        }
-
-        progress?.let {
-            Text(
-                text = "${it.correctAnswers}/${it.totalQuestions}",
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
-                modifier = Modifier
-                    .layoutId("progressText")
-                    .padding(16.dp)
-            )
-        }
-
-        LazyColumn(
-            modifier = Modifier
-                .layoutId("questionList")
-                .fillMaxSize()
+    Column(
+        modifier = Modifier
+            .padding(24.dp)
+            .background(MaterialTheme.colors.background)
+    ) {
+        Surface(
+            elevation = 16.dp,
+            shape = RoundedCornerShape(35.dp),
+            color = MaterialTheme.colors.surface
         ) {
+            Row(
+                Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                questionsViewModel.currentWeek.value?.let {
+                    Text(
+                        text = formatWeekString(it),
+                        textAlign = TextAlign.Center,
+                        fontSize = 28.sp,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
+                }
 
-            items(questions.size) { questionIndex ->
-                val question = questions[questionIndex]
-                Log.e(
-                    "WEEK QUESTIONS",
-                    "Week Questions  was \n ${question.questionText} \n ${question.correctAnswer} \n ${question.questionStatus}"
-                )
-                var backgroundColor by remember {
-                    mutableStateOf(Color.White)
+                progress?.let {
+                    Text(
+                        text = "${it.correctAnswers}/${it.totalQuestions}",
+                        textAlign = TextAlign.Center,
+                        fontSize = 28.sp,
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
                 }
-                backgroundColor = when (question.questionStatus) {
-                    QuestionStatus.CORRECT_ANSWER.ordinal -> Color.Green
-                    QuestionStatus.WRONG_ANSWER.ordinal -> Color.Red
-                    QuestionStatus.NOT_ANSWERED.ordinal -> Color.White
-                    else -> {
-                        Color.White
+            }
+
+        }
+
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp)
+        )
+
+        Surface(
+            elevation = 8.dp,
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colors.surface
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+
+                items(questions.size) { questionIndex ->
+                    val question = questions[questionIndex]
+                    Log.e(
+                        "WEEK QUESTIONS",
+                        "Week Questions  was \n ${question.questionText} \n ${question.correctAnswer} \n ${question.questionStatus}"
+                    )
+                    var backgroundColor by remember {
+                        mutableStateOf(Color.White)
                     }
-                }
-                Card(
-                    elevation = 10.dp,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Box(
-                        Modifier
-                            .clickable {
-                                questionsViewModel.setCurrentQuestion(question = question)
-                                navController.navigate(Screens.QuestionScreen.route)
-                            }
-                            .fillMaxSize()
-                            .background(backgroundColor)
+                    backgroundColor = when (question.questionStatus) {
+                        QuestionStatus.CORRECT_ANSWER.ordinal -> Color.Green
+                        QuestionStatus.WRONG_ANSWER.ordinal -> Color.Red
+                        QuestionStatus.NOT_ANSWERED.ordinal -> Color.White
+                        else -> {
+                            Color.White
+                        }
+                    }
+                    Card(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
-                        Text(
-                            text = "Question number ${question.questionNumber}",
-                            modifier = Modifier.padding(
-                                16.dp
+                        Box(
+                            Modifier
+                                .clickable {
+                                    questionsViewModel.setCurrentQuestion(question = question)
+                                    navController.navigate(Screens.QuestionScreen.route)
+                                }
+                                .fillMaxSize()
+                                .background(backgroundColor)
+                        ) {
+                            Text(
+                                text = "Question number ${question.questionNumber}",
+                                modifier = Modifier.padding(
+                                    16.dp
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
         }
     }
+
 }
