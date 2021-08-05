@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.composables
+package com.example.studyapp.ui.screens.homescreen
 
 import android.util.Log
 import androidx.compose.foundation.border
@@ -22,155 +22,89 @@ import androidx.constraintlayout.compose.ChainStyle
 import androidx.constraintlayout.compose.ConstrainedLayoutReference
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
+import com.example.studyapp.ui.sharedcomposables.MainTextCard
 import com.example.studyapp.util.*
 
 @Composable
 fun MyApp(navigation: (String) -> Unit) {
     Surface(color = MaterialTheme.colors.background) {
         val CORNER_RADIUS = 15
-        val constraintSet = ConstraintSet {
-            //region create constraint refs
-            val wk1 = createRefFor(WK1)
-            val wk2 = createRefFor(WK2)
-            val wk3 = createRefFor(WK3)
-            val wk4 = createRefFor(WK4)
-            val wk5 = createRefFor(WK5)
-            val wk6 = createRefFor(WK6)
-            val buttons = createRefFor("buttons")
-            val titleBackground = createRefFor(TITLE_BACKGROUND)
-            val guideline = createGuidelineFromTop(.5f)
-            //end region
-            constrain(titleBackground) {
-                top.linkTo(parent.top)
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-                bottom.linkTo(guideline)
-            }
-
-            constrain(buttons) {
-                start.linkTo(parent.start)
-                end.linkTo(parent.end)
-                top.linkTo(guideline)
-                bottom.linkTo(parent.bottom)
-            }
-
-            /*     constrain(wk1) {
-                     top.linkTo(guideline)
-                     bottom.linkTo(wk2.top)
-                     start.linkTo(parent.start)
-                     end.linkTo(wk4.start)
-                 }
-                 constrain(wk2) {
-                     top.linkTo(wk1.bottom)
-                     start.linkTo(parent.start)
-                     end.linkTo(wk5.start)
-                     bottom.linkTo(wk3.top)
-                 }
-                 constrain(wk3) {
-                     top.linkTo(wk2.bottom)
-                     start.linkTo(parent.start)
-                     end.linkTo(wk6.start)
-                     bottom.linkTo(parent.bottom)
-                 }
-                 constrain(wk4) {
-                     top.linkTo(wk1.top)
-                     start.linkTo(wk1.end)
-                     end.linkTo(parent.end)
-                     bottom.linkTo(wk1.bottom)
-                 }
-                 constrain(wk5) {
-                     top.linkTo(wk2.top)
-                     start.linkTo(wk2.end)
-                     end.linkTo(parent.end)
-                     bottom.linkTo(wk2.bottom)
-                 }
-                 constrain(wk6) {
-                     top.linkTo(wk3.top)
-                     start.linkTo(wk3.end)
-                     end.linkTo(parent.end)
-                     bottom.linkTo(wk3.bottom)
-                 }*/
-
-
-            //Chain references
-            val chainedWeeks: Array<ConstrainedLayoutReference> = arrayOf(titleBackground, buttons)
-            //vertical Chains
-            createVerticalChain(chainStyle = ChainStyle.Spread, elements = chainedWeeks)
-        }
-        ConstraintLayout(
-            constraintSet,
+        Column(
             modifier = Modifier
-                .fillMaxSize(.999f)
+                .fillMaxSize(.999f),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Card(
+
+            MainTextCard(
+                cornerRadius = CORNER_RADIUS,
+                text = "Android Quiz",
                 modifier = Modifier
-                    .layoutId(TITLE_BACKGROUND)
-                    .fillMaxWidth(0.80f)
-                    .fillMaxHeight(.20f),
-                elevation = 12.dp,
+                    .fillMaxWidth(0.9f)
+                    .fillMaxHeight(.20f)
+            )
+
+            Spacer(modifier = Modifier.height(80.dp))
+
+            Card(
+                elevation = 8.dp,
+                modifier = Modifier
+                    .fillMaxWidth(.9f),
                 shape = RoundedCornerShape(CORNER_RADIUS)
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    modifier = Modifier.heightIn(min = 350.dp, max = 600.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Android Quiz",
-                        modifier = Modifier
-                            .fillMaxWidth(.50f),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .layoutId("buttons")
-                    .fillMaxWidth(.8f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    WeekButton(
-                        weekNumber = WK1,
-                        modifier = Modifier
-                            .layoutId(WK1)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
-                    WeekButton(
-                        weekNumber = WK2,
-                        modifier = Modifier
-                            .layoutId(WK2)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    WeekButton(
-                        weekNumber = WK3,
-                        modifier = Modifier
-                            .layoutId(WK3)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
-                    WeekButton(
-                        weekNumber = WK4,
-                        modifier = Modifier
-                            .layoutId(WK4)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    WeekButton(
-                        weekNumber = WK5,
-                        modifier = Modifier
-                            .layoutId(WK5)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
-                    WeekButton(
-                        weekNumber = WK6,
-                        modifier = Modifier
-                            .layoutId(WK6)
-                    ) { weekNumber -> navigation.invoke(weekNumber) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WeekButton(
+                            weekNumber = WK1,
+                            modifier = Modifier
+                                .layoutId(WK1)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                        WeekButton(
+                            weekNumber = WK2,
+                            modifier = Modifier
+                                .layoutId(WK2)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WeekButton(
+                            weekNumber = WK3,
+                            modifier = Modifier
+                                .layoutId(WK3)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                        WeekButton(
+                            weekNumber = WK4,
+                            modifier = Modifier
+                                .layoutId(WK4)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        WeekButton(
+                            weekNumber = WK5,
+                            modifier = Modifier
+                                .layoutId(WK5)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                        WeekButton(
+                            weekNumber = WK6,
+                            modifier = Modifier
+                                .layoutId(WK6)
+                        ) { weekNumber -> navigation.invoke(weekNumber) }
+                    }
                 }
             }
         }
@@ -196,7 +130,7 @@ fun WeekButton(
     Card(
         modifier = modifier
             .padding(16.dp)
-            .width(140.dp)
+            .width(120.dp)
             .height(60.dp)
             .border(2.dp, MaterialTheme.colors.primaryVariant, shape = RoundedCornerShape(20))
             .clickable {
@@ -209,7 +143,7 @@ fun WeekButton(
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 modifier = modifier.width(IntrinsicSize.Max),

@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.composables
+package com.example.studyapp.ui.screens.weekquestionsscreen
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -15,68 +15,40 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ChainStyle
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.ConstraintSet
-import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.ui.viewmodel.QuestionsViewModel
+import com.example.studyapp.data.model.StudentProgress
+import com.example.studyapp.ui.sharedcomposables.ProgressBanner
+import com.example.studyapp.ui.sharedcomposables.QuestionCard
+import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.QuestionStatus
-import com.example.studyapp.util.Screens
 import com.example.studyapp.util.formatWeekString
 
+val TAG = "WEEK_QUESTIONS_SCREEN"
 
 @Composable
 fun WeekQuestions(
-    navController: NavController,
     questions: List<Question>,
-    questionsViewModel: QuestionsViewModel
+    progress: StudentProgress?,
+    currentWeek: String?,
+    onQuestionSelected: (Question) -> Unit
 ) {
-    val progress by questionsViewModel.currentProgress.observeAsState()
-
     Column(
         modifier = Modifier
             .padding(24.dp)
             .background(MaterialTheme.colors.background)
     ) {
-        Surface(
-            elevation = 16.dp,
-            shape = RoundedCornerShape(35.dp),
-            color = MaterialTheme.colors.surface
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                questionsViewModel.currentWeek.value?.let {
-                    Text(
-                        text = formatWeekString(it),
-                        textAlign = TextAlign.Center,
-                        fontSize = 28.sp,
-                        modifier = Modifier
-                            .padding(16.dp)
-                    )
-                }
 
-                progress?.let {
-                    Text(
-                        text = "${it.correctAnswers}/${it.totalQuestions}",
-                        textAlign = TextAlign.Center,
-                        fontSize = 28.sp,
-                        modifier = Modifier
-                            .padding(16.dp)
-                    )
-                }
+        currentWeek?.let { week ->
+            progress?.let { prog ->
+                ProgressBanner(
+                    currentWeek = week,
+                    progress = prog
+                )
             }
-
         }
 
         Spacer(
@@ -99,9 +71,10 @@ fun WeekQuestions(
                 items(questions.size) { questionIndex ->
                     val question = questions[questionIndex]
                     Log.e(
-                        "WEEK QUESTIONS",
+                        TAG,
                         "Week Questions  was \n ${question.questionText} \n ${question.correctAnswer} \n ${question.questionStatus}"
                     )
+
                     var backgroundColor by remember {
                         mutableStateOf(Color.White)
                     }
@@ -113,33 +86,13 @@ fun WeekQuestions(
                             Color.White
                         }
                     }
-                    Card(
-                        elevation = 10.dp,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Box(
-                            Modifier
-                                .clickable {
-                                    questionsViewModel.setCurrentQuestion(question = question)
-                                    navController.navigate(Screens.QuestionScreen.route)
-                                }
-                                .fillMaxSize()
-                                .background(backgroundColor)
-                        ) {
-                            Text(
-                                text = "Question number ${question.questionNumber}",
-                                modifier = Modifier.padding(
-                                    16.dp
-                                )
-                            )
-                        }
-                    }
+                    QuestionCard(
+                        question = question,
+                        backgroundColor = backgroundColor,
+                        onQuestionSelected = onQuestionSelected
+                    )
                 }
             }
         }
     }
-
 }

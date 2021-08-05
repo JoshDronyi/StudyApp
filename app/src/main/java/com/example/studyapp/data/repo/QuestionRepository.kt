@@ -20,17 +20,28 @@ class QuestionRepository @Inject constructor(
     private val firebaseDatabase: FirebaseDatabase
 ) : RepositoryInterface {
 
+    val TAG = "Question Repository"
+
     @ExperimentalCoroutinesApi
     override suspend fun getQuestionsByWeek(week: String) = callbackFlow {
         try {
             val ref = firebaseDatabase.getReference("/$week")
             val questions = mutableListOf<Question>()
+            Log.e(
+                TAG,
+                "getQuestionsByWeek: creating callback, ref was $ref, questions was $questions"
+            )
             val callback = object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    Log.e(TAG, "onDataChange: Data changed. ${snapshot.children}")
                     snapshot.children.forEach {
                         val question = it.getValue(Question::class.java) ?: return
                         questions.add(question)
                     }
+                    Log.e(
+                        TAG,
+                        "getQuestionsByWeek: trying to send Questions $questions"
+                    )
                     trySend(questions)
                 }
 
@@ -43,16 +54,18 @@ class QuestionRepository @Inject constructor(
                     )
                 }
             }
+            Log.e(TAG, "getQuestionsByWeek: adding callback")
             ref.addValueEventListener(callback)
             awaitClose {
-               removeReference(ref,callback)
+                Log.e(TAG, "getQuestionsByWeek: reference being removed.")
+                removeReference(ref, callback)
             }
         } catch (e: IllegalStateException) {
             Log.e("EXCEPTION", e.message.toString())
         }
     }
 
-    private fun removeReference(ref:DatabaseReference, callback: ValueEventListener){
+    private fun removeReference(ref: DatabaseReference, callback: ValueEventListener) {
         ref.removeEventListener(callback)
     }
 

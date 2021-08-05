@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.composables
+package com.example.studyapp.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,13 +20,13 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.ui.viewmodel.QuestionsViewModel
+import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.QuestionStatus
 
 @Composable
 fun QuestionContent(
     question: Question,
-    questionsViewModel: QuestionsViewModel,
+    questionListViewModel: QuestionListViewModel,
     navigate: (Boolean) -> Unit
 ) {
     val constraints = ConstraintSet {
@@ -146,7 +146,7 @@ fun QuestionContent(
                 text = answer,
                 "answer$index",
                 question,
-                questionsViewModel,
+                questionListViewModel,
                 navigate
             )
         }
@@ -158,7 +158,7 @@ fun AnswerButton(
     text: String,
     layoutId: String,
     question: Question,
-    questionsViewModel: QuestionsViewModel,
+    questionListViewModel: QuestionListViewModel,
     navigate: (Boolean) -> Unit
 ) {
     val backgroundColor = remember {
@@ -167,18 +167,18 @@ fun AnswerButton(
     Button(
         onClick = {
             if (text == question.correctAnswer) {
-                questionsViewModel.updateQuestionStatus(question.apply {
+                questionListViewModel.updateQuestionStatus(question.apply {
                     questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
                 })
             } else {
-                questionsViewModel.updateQuestionStatus(question.apply {
+                questionListViewModel.updateQuestionStatus(question.apply {
                     questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
                 })
             }
-            if (!questionsViewModel.getNewQuestion())
+            if (!questionListViewModel.getNewQuestion())
                 navigate.invoke(false)
 
-            questionsViewModel.getNewQuestion()
+            questionListViewModel.getNewQuestion()
 
             navigate.invoke(true)
         },

@@ -18,7 +18,7 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class QuestionsViewModel @Inject constructor(private val repository: RepositoryInterface) :
+class QuestionListViewModel @Inject constructor(private val repository: RepositoryInterface) :
     ViewModel() {
 
     private val _questions = MutableLiveData<List<Question>>()
@@ -36,6 +36,10 @@ class QuestionsViewModel @Inject constructor(private val repository: RepositoryI
         return _questions.value?.let { questions ->
             shouldShowNextQuestion(questions)
         } ?: false
+    }
+
+    fun setQuestionList( questions: List<Question>){
+        _questions.value = questions
     }
 
 
