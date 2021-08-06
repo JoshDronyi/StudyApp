@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.screens
+package com.example.studyapp.ui.composables.screens.currentquestionscreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,14 +20,11 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.ui.viewmodel.QuestionListViewModel
-import com.example.studyapp.util.QuestionStatus
 
 @Composable
-fun QuestionContent(
+fun CurrentQuestionContent(
     question: Question,
-    questionListViewModel: QuestionListViewModel,
-    navigate: (Boolean) -> Unit
+    onAnswerButtonClicked: (String, Question) -> Unit
 ) {
     val constraints = ConstraintSet {
         val questionNumber = createRefFor("questionsNumber")
@@ -146,8 +143,7 @@ fun QuestionContent(
                 text = answer,
                 "answer$index",
                 question,
-                questionListViewModel,
-                navigate
+                onAnswerButtonClicked
             )
         }
     }
@@ -158,30 +154,13 @@ fun AnswerButton(
     text: String,
     layoutId: String,
     question: Question,
-    questionListViewModel: QuestionListViewModel,
-    navigate: (Boolean) -> Unit
+    onAnswerButtonClicked: (String, Question) -> Unit
 ) {
     val backgroundColor = remember {
         mutableStateOf(Color.Unspecified)
     }
     Button(
-        onClick = {
-            if (text == question.correctAnswer) {
-                questionListViewModel.updateQuestionStatus(question.apply {
-                    questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
-                })
-            } else {
-                questionListViewModel.updateQuestionStatus(question.apply {
-                    questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
-                })
-            }
-            if (!questionListViewModel.getNewQuestion())
-                navigate.invoke(false)
-
-            questionListViewModel.getNewQuestion()
-
-            navigate.invoke(true)
-        },
+        onClick = { onAnswerButtonClicked.invoke(text, question) },
         modifier = Modifier
             .layoutId(layoutId)
             .fillMaxHeight(.10f)

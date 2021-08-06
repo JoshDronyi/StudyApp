@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.screens.homescreen
+package com.example.studyapp.ui.composables.screens.homescreen
 
 import android.util.Log
 import androidx.compose.foundation.border
@@ -18,11 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.compose.ChainStyle
-import androidx.constraintlayout.compose.ConstrainedLayoutReference
-import androidx.constraintlayout.compose.ConstraintLayout
-import androidx.constraintlayout.compose.ConstraintSet
-import com.example.studyapp.ui.sharedcomposables.MainTextCard
+import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.util.*
 
 @Composable
@@ -114,7 +110,7 @@ fun MyApp(navigation: (String) -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
-    MyApp() {
+    MyApp {
         Log.e("JOSH", "Preview log. $it")
     }
 }

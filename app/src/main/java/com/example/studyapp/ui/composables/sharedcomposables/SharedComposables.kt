@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.sharedcomposables
+package com.example.studyapp.ui.composables.sharedcomposables
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,9 +42,7 @@ fun QuestionCard(
         ) {
             Text(
                 text = "Question number ${question.questionNumber}",
-                modifier = Modifier.padding(
-                    16.dp
-                )
+                modifier = Modifier.padding(16.dp)
             )
         }
     }

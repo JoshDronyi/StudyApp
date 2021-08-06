@@ -21,22 +21,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.data.model.ApiState
-import com.example.studyapp.ui.screens.homescreen.MyApp
-import com.example.studyapp.ui.screens.QuestionContent
-import com.example.studyapp.ui.screens.weekquestionsscreen.WeekQuestions
+import com.example.studyapp.data.model.Question
+import com.example.studyapp.ui.composables.screens.currentquestionscreen.CurrentQuestionContent
+import com.example.studyapp.ui.composables.screens.homescreen.MyApp
+import com.example.studyapp.ui.composables.screens.weekquestionsscreen.WeekQuestions
 import com.example.studyapp.ui.theme.StudyAppTheme
-import com.example.studyapp.ui.viewmodel.CurrentQuestionViewModel
 import com.example.studyapp.ui.viewmodel.MainViewModel
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.*
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    private val questionListViewModel: QuestionListViewModel by viewModels()
-    private val currentQuestionViewModel: CurrentQuestionViewModel by viewModels()
-    private val mainViewModel: MainViewModel by viewModels()
+    val mainViewModel: MainViewModel by viewModels()
+    val questionListViewModel: QuestionListViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +55,7 @@ class MainActivity : ComponentActivity() {
         NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
             composable(Screens.MainScreen.route) {
                 ExampleAnimation {
-                    MyAppScreen(navController = navController)
+                    MyAppScreen(navController)
                 }
             }
             composable(Screens.WeekQuestionsScreen.route) {
@@ -68,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 Screens.QuestionScreen.route
             ) {
                 ExampleAnimation {
-                    QuestionScreen()
+                    QuestionScreen(navController)
                 }
             }
         }
@@ -91,28 +90,10 @@ class MainActivity : ComponentActivity() {
         val TAG = "My App Screen"
         val apiState by mainViewModel.apiState.observeAsState()
         MyApp { week ->
-            Log.e(
-                TAG, " On Click lambda, week was $week, " +
-                        "comparison strings in the format of $WK1"
-            )
             when (week) {
-                WK1 -> {
-                    mainViewModel.getQuestions(WK1)
-                }
-                WK2 -> {
-                    mainViewModel.getQuestions(WK2)
-                }
-                WK3 -> {
-                    mainViewModel.getQuestions(WK3)
-                }
-                WK4 -> {
-                    mainViewModel.getQuestions(WK4)
-                }
-                WK5 -> {
-                    mainViewModel.getQuestions(WK5)
-                }
-                WK6 -> {
-                    mainViewModel.getQuestions(WK6)
+                WK1, WK2, WK3, WK4, WK5, WK6 -> {
+                    questionListViewModel.currentWeek.value = week
+                    mainViewModel.getQuestions(week)
                 }
                 else -> {
                     Toast
@@ -135,10 +116,7 @@ class MainActivity : ComponentActivity() {
                     questionListViewModel.setQuestionList(it.questionList)
                     navController.navigate(Screens.WeekQuestionsScreen.route)
                 }
-                is ApiState.Sleep -> {
-                    Log.e(TAG, "STATE : ${it})")
-                }
-                is ApiState.Loading -> {
+                is ApiState.Sleep, ApiState.Loading -> {
                     Log.e(TAG, "STATE : ${it})")
                 }
                 else -> {
@@ -150,7 +128,7 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun QuestionListScreen(navController: NavController) {
-        // mainViewModel.changeState()
+        mainViewModel.changeState()
         val questions by questionListViewModel.questions.observeAsState()
         val progress by questionListViewModel.currentProgress.observeAsState()
         val currentWeek by questionListViewModel.currentWeek.observeAsState()
@@ -161,7 +139,7 @@ class MainActivity : ComponentActivity() {
                 progress = progress,
                 currentWeek = currentWeek
             ) { question ->
-                currentQuestionViewModel.setCurrentQuestion(question)
+                questionListViewModel.setCurrentQuestion(question)
                 navController.navigate(Screens.QuestionScreen.route)
             }
             questionListViewModel.setCurrentProgress(it.generateStudentProgress())
@@ -169,26 +147,44 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun QuestionScreen() {
-        val currentQuestion by currentQuestionViewModel.currentQuestion.observeAsState()
+    fun QuestionScreen(navController: NavController) {
+        val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
         currentQuestion?.let {
-            QuestionContent(question = it, questionListViewModel) { processCompleted ->
-                /*if (!processCompleted) {
-                    onBackPressed()
-                }*/
+            CurrentQuestionContent(question = it) { text, question ->
+                if (!checkButtonAnswer(text, question)) {
+                    navController.navigateUp()
+                }
             }
         }
     }
 
+    private fun checkButtonAnswer(text: String, question: Question): Boolean {
+        if (text == question.correctAnswer) {
+            questionListViewModel.updateQuestionStatus(question.apply {
+                questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
+            })
+        } else {
+            questionListViewModel.updateQuestionStatus(question.apply {
+                questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
+            })
+        }
+        return questionListViewModel.getNewQuestion()
+    }
 
     @Preview(showBackground = true, showSystemUi = true)
     @Composable
     fun DefaultPreview() {
         val question = questionListViewModel.questions.value?.first()
         question?.let {
-            QuestionContent(it, questionListViewModel = questionListViewModel) {
-
+            CurrentQuestionContent(it) { string, question ->
+                Log.e(
+                    "PREVIEW",
+                    "Got the preview loaded. String was $string question was $question"
+                )
             }
         }
     }
+
 }
+
+

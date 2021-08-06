@@ -1,33 +1,23 @@
-package com.example.studyapp.ui.screens.weekquestionsscreen
+package com.example.studyapp.ui.composables.screens.weekquestionsscreen
 
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
-import com.example.studyapp.ui.sharedcomposables.ProgressBanner
-import com.example.studyapp.ui.sharedcomposables.QuestionCard
-import com.example.studyapp.ui.viewmodel.QuestionListViewModel
+import com.example.studyapp.ui.composables.sharedcomposables.ProgressBanner
+import com.example.studyapp.ui.composables.sharedcomposables.QuestionCard
 import com.example.studyapp.util.QuestionStatus
-import com.example.studyapp.util.formatWeekString
 
-val TAG = "WEEK_QUESTIONS_SCREEN"
+const val TAG = "WEEK_QUESTIONS_SCREEN"
 
 @Composable
 fun WeekQuestions(
