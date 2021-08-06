@@ -5,6 +5,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.repo.QuestionRepository
@@ -18,11 +20,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel @Inject constructor(private val repo:QuestionRepository) : ViewModel() {
+class MainViewModel @Inject constructor(private val repo: QuestionRepository) : ViewModel() {
 
     private val _apiState = MutableLiveData<ApiState<List<Question>>>(ApiState.Sleep)
     val apiState: LiveData<ApiState<List<Question>>>
         get() = _apiState
+
 
     private val TAG = "MainViewModel"
 
@@ -32,11 +35,11 @@ class MainViewModel @Inject constructor(private val repo:QuestionRepository) : V
         Log.e(TAG, "getQuestions:  week was $week")
         _apiState.value = ApiState.Loading
         viewModelScope.launch(Dispatchers.IO) {
-            Log.e(TAG,"getQuestions: Launched coroutine.")
+            Log.e(TAG, "getQuestions: Launched coroutine.")
             repo.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
-                Log.e(TAG," getQuestions (inside repo lambda): Questions -> $dataFromTheInternet")
+                Log.e(TAG, " getQuestions (inside repo lambda): Questions -> $dataFromTheInternet")
                 val questions = repo.getQuestionsByWeekOnDatabase(week).first()
-                Log.e(TAG,"getQuestions(inside repo lambda): Questions DB -> $questions")
+                Log.e(TAG, "getQuestions(inside repo lambda): Questions DB -> $questions")
                 if (questions.isNotEmpty())
                     dataFromTheInternet.mapIndexed { index, internet ->
                         internet.questionStatus = questions[index].questionStatus
@@ -50,6 +53,4 @@ class MainViewModel @Inject constructor(private val repo:QuestionRepository) : V
     fun changeState() {
         _apiState.postValue(ApiState.Sleep)
     }
-
-
 }

@@ -40,7 +40,7 @@ fun MyApp(navigation: (String) -> Unit) {
                     .fillMaxHeight(.20f)
             )
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Card(
                 elevation = 8.dp,
