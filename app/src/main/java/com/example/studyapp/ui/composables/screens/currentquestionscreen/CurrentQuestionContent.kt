@@ -20,6 +20,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 
 @Composable
 fun CurrentQuestionContent(
@@ -112,30 +113,15 @@ fun CurrentQuestionContent(
             )
         }
 
-        Card(
-            elevation = 8.dp,
-            backgroundColor = MaterialTheme.colors.surface,
-            modifier = Modifier
+
+        MainTextCard(
+            cornerRadius = 25, text = question.questionText, modifier = Modifier
                 .layoutId("questionText")
                 .fillMaxWidth(.75f)
                 .fillMaxHeight(.4f)
-                .border(3.dp, MaterialTheme.colors.primaryVariant, RoundedCornerShape(25.dp)),
-            shape = RoundedCornerShape(25.dp)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = question.questionText,
-                    textAlign = TextAlign.Center,
-                    fontSize = 24.sp
-                )
-            }
-        }
+                .border(3.dp, MaterialTheme.colors.primaryVariant, RoundedCornerShape(25.dp))
+        )
+
 
         //Makes 4 Answer buttons.
         question.mixAnswers().forEachIndexed { index, answer ->
@@ -164,7 +150,7 @@ fun AnswerButton(
         modifier = Modifier
             .layoutId(layoutId)
             .fillMaxHeight(.10f)
-            .defaultMinSize(minWidth = 150.dp, minHeight = 50.dp)
+            .defaultMinSize(minWidth = 150.dp, minHeight = 70.dp)
             .fillMaxWidth(.3f),
         colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)
     ) {

@@ -12,14 +12,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,52 +29,131 @@ import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.composables.screens.currentquestionscreen.CurrentQuestionContent
 import com.example.studyapp.ui.composables.screens.homescreen.MyApp
 import com.example.studyapp.ui.composables.screens.weekquestionsscreen.WeekQuestions
+import com.example.studyapp.ui.composables.sharedcomposables.ButtonOptions
 import com.example.studyapp.ui.composables.sharedcomposables.StudyTopAppBar
 import com.example.studyapp.ui.theme.StudyAppTheme
 import com.example.studyapp.ui.viewmodel.MainViewModel
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.*
+import com.google.android.material.internal.NavigationMenu
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     private val questionListViewModel: QuestionListViewModel by viewModels()
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val navController = rememberNavController()
             StudyAppTheme {
-                Surface(color = MaterialTheme.colors.background) {
-                    AppNavigator(navController)
+                AppNavigator()
+            }
+        }
+    }
 
+    @Composable
+    fun NavDrawer() {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = "Home")
+            Divider()
+            Text(text = "High Scores")
+        }
+    }
+
+    @Composable
+    fun AppNavigator() {
+        val scope = rememberCoroutineScope()
+        val state = rememberScaffoldState()
+        val navController = rememberNavController()
+        val currentDestination = remember {
+            mutableStateOf(navController.currentDestination)
+        }
+
+        Scaffold(
+            backgroundColor = MaterialTheme.colors.background,
+            drawerContent = {
+                NavDrawer()
+            },
+            drawerElevation = 8.dp,
+            drawerBackgroundColor = MaterialTheme.colors.surface,
+            scaffoldState = state
+        ) {
+            NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
+                composable(Screens.MainScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(text = "Android Study App", currentDestination.value) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            MyAppScreen(navController)
+                        }
+                    }
+                }
+                composable(Screens.WeekQuestionsScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = "Question List",
+                                destination = navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            QuestionListScreen(navController)
+                        }
+                    }
+                }
+                composable(Screens.QuestionScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = Screens.QuestionScreen.route,
+                                navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            QuestionScreen(navController)
+                        }
+                    }
                 }
             }
         }
     }
 
+    private fun openDrawer(state: ScaffoldState, scope: CoroutineScope) =
+        scope.launch(Dispatchers.Main) {
+            state.drawerState.open()
+        }
 
-    @Composable
-    fun AppNavigator(navController: NavHostController) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
-                composable(Screens.MainScreen.route) {
-                    ExampleAnimation {
-                        MyAppScreen(navController)
+    private fun closeDrawer(state: ScaffoldState, scope: CoroutineScope) =
+        scope.launch(Dispatchers.Main) {
+            state.drawerState.close()
+        }
+
+    private fun handleButtonOptions(
+        option: ButtonOptions,
+        state: ScaffoldState,
+        navController: NavController,
+        scope: CoroutineScope
+    ) {
+        when (option) {
+            ButtonOptions.BACK -> {
+                navController.navigateUp()
+            }
+            ButtonOptions.MENU -> {
+                when (state.drawerState.currentValue) {
+                    DrawerValue.Closed -> {
+                        openDrawer(state, scope)
                     }
-                }
-                composable(Screens.WeekQuestionsScreen.route) {
-                    ExampleAnimation {
-                        QuestionListScreen(navController)
-                    }
-                }
-                composable(Screens.QuestionScreen.route) {
-                    ExampleAnimation {
-                        QuestionScreen(navController)
+                    DrawerValue.Open -> {
+                        closeDrawer(state, scope)
                     }
                 }
             }
@@ -98,12 +177,8 @@ class MainActivity : ComponentActivity() {
     fun MyAppScreen(navController: NavController) {
         val TAG = "My App Screen"
         val apiState by mainViewModel.apiState.observeAsState()
-        val shouldShowArrow =
-            shouldShowArrow(navController.currentDestination?.route, Screens.MainScreen.route)
+
         Column {
-            StudyTopAppBar(shouldShowArrow) {
-                navController.navigateUp()
-            }
             MyApp { week ->
                 changeCurrentWeek(week, navController)
             }
@@ -127,14 +202,7 @@ class MainActivity : ComponentActivity() {
         val progress by questionListViewModel.currentProgress.observeAsState()
         val currentWeek by questionListViewModel.currentWeek.observeAsState()
 
-        val shouldShowArrow =
-            shouldShowArrow(navController.currentDestination?.route, Screens.MainScreen.route)
-
         Column {
-            StudyTopAppBar(shouldShowArrow) {
-                navController.navigateUp()
-            }
-
             questions?.let {
                 WeekQuestions(
                     questions = it,
@@ -152,14 +220,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun QuestionScreen(navController: NavController) {
         val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
-        val shouldShowArrow =
-            shouldShowArrow(navController.currentDestination?.route, Screens.MainScreen.route)
 
         Column {
-            StudyTopAppBar(shouldShowArrow) {
-                navController.navigateUp()
-            }
-
             currentQuestion?.let {
                 CurrentQuestionContent(question = it) { text, question ->
                     if (!checkButtonAnswer(text, question)) {
@@ -176,12 +238,6 @@ class MainActivity : ComponentActivity() {
     private val CHECK_TAG = "CheckApiState function"
 
     //Helper functions
-    private fun shouldShowArrow(
-        currentDestination: String?,
-        startDestination: String?
-    ): Boolean = currentDestination != startDestination //Show arrow when not on the Main screen
-
-
     private fun checkApiState(
         questionListState: ApiState<List<Question>>,
         navigate: (String) -> Unit
