@@ -12,3 +12,10 @@ const val RIGHT = "right"
 const val TITLE_BACKGROUND = "title_background"
 const val BUTTON_BACKGROUND = "button_background"
 const val APP_BACKGROUND = "app_background"
+
+enum class ButtonOptions {
+    MENU, BACK
+}
+enum class DrawerOptions{
+    HOME, SCOREBOARD
+}

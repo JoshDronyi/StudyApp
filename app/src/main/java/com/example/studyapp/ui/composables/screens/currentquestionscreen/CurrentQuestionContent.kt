@@ -27,110 +27,81 @@ fun CurrentQuestionContent(
     question: Question,
     onAnswerButtonClicked: (String, Question) -> Unit
 ) {
-    val constraints = ConstraintSet {
-        val questionNumber = createRefFor("questionsNumber")
-        val questionText = createRefFor("questionText")
-        val buttonAnswer1 = createRefFor("answer0")
-        val buttonAnswer2 = createRefFor("answer1")
-        val buttonAnswer3 = createRefFor("answer2")
-        val buttonAnswer4 = createRefFor("answer3")
 
-        val guideline = createGuidelineFromTop(0.5f)
-
-        constrain(questionNumber) {
-            top.linkTo(parent.top)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            width = Dimension.fillToConstraints
-            height = Dimension.wrapContent
-        }
-
-        constrain(questionText) {
-            top.linkTo(questionNumber.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(parent.end)
-            bottom.linkTo(guideline)
-            width = Dimension.fillToConstraints
-            height = Dimension.wrapContent
-        }
-        constrain(buttonAnswer1) {
-            top.linkTo(guideline)
-            start.linkTo(parent.start)
-            end.linkTo(buttonAnswer2.start)
-            bottom.linkTo(buttonAnswer3.top)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-        constrain(buttonAnswer2) {
-            top.linkTo(guideline)
-            start.linkTo(buttonAnswer1.end)
-            end.linkTo(parent.end)
-            bottom.linkTo(buttonAnswer4.top)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-        constrain(buttonAnswer3) {
-            top.linkTo(buttonAnswer1.bottom)
-            start.linkTo(parent.start)
-            end.linkTo(buttonAnswer4.start)
-            bottom.linkTo(parent.bottom)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-        constrain(buttonAnswer4) {
-            top.linkTo(buttonAnswer2.bottom)
-            start.linkTo(buttonAnswer3.end)
-            end.linkTo(parent.end)
-            bottom.linkTo(parent.bottom)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-        }
-
-        createHorizontalChain(buttonAnswer1, buttonAnswer2, chainStyle = ChainStyle.Spread)
-        createHorizontalChain(buttonAnswer3, buttonAnswer4, chainStyle = ChainStyle.Spread)
-    }
-
-    ConstraintLayout(
-        constraintSet = constraints,
+    Column(
         Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colors.background)
-            .padding(24.dp)
+            .background(MaterialTheme.colors.background),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Row(
+
+        val mixedAnswers = question.mixAnswers()
+        Column(
             modifier = Modifier
-                .layoutId("questionsNumber")
-                .fillMaxWidth()
-                .fillMaxHeight(0.1f)
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth(.90f)
+                .fillMaxHeight(.99f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
-            Text(
-                text = "Question ${question.questionNumber}",
-                textAlign = TextAlign.Center,
-                fontSize = 40.sp
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Question ${question.questionNumber}",
+                    textAlign = TextAlign.Center,
+                    fontSize = 40.sp
+                )
+            }
+            val cornerRadius = 15
+            MainTextCard(
+                modifier = Modifier
+                    .heightIn(min = 200.dp)
+                    .fillMaxWidth(),
+                text = question.questionText,
+                shape = RoundedCornerShape(cornerRadius)
             )
-        }
 
-
-        MainTextCard(
-            cornerRadius = 25, text = question.questionText, modifier = Modifier
-                .layoutId("questionText")
-                .fillMaxWidth(.75f)
-                .fillMaxHeight(.4f)
-                .border(3.dp, MaterialTheme.colors.primaryVariant, RoundedCornerShape(25.dp))
-        )
-
-
-        //Makes 4 Answer buttons.
-        question.mixAnswers().forEachIndexed { index, answer ->
-            AnswerButton(
-                text = answer,
-                "answer$index",
-                question,
-                onAnswerButtonClicked
-            )
+            Card(
+                Modifier
+                    .fillMaxHeight(.60f),
+                elevation = 8.dp,
+                shape = RoundedCornerShape(12.dp),
+                backgroundColor = MaterialTheme.colors.surface
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.SpaceEvenly,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    for (i in 0..3 step 2) {
+                        val answer1 = mixedAnswers[i]
+                        val answer2 = mixedAnswers[i + 1]
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 70.dp, max = 100.dp)
+                        ) {
+                            AnswerButton(
+                                text = answer1,
+                                question = question,
+                                modifier = Modifier,
+                                onAnswerButtonClicked = onAnswerButtonClicked
+                            )
+                            AnswerButton(
+                                text = answer2,
+                                question = question,
+                                modifier = Modifier,
+                                onAnswerButtonClicked = onAnswerButtonClicked
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -138,8 +109,8 @@ fun CurrentQuestionContent(
 @Composable
 fun AnswerButton(
     text: String,
-    layoutId: String,
     question: Question,
+    modifier: Modifier,
     onAnswerButtonClicked: (String, Question) -> Unit
 ) {
     val backgroundColor = remember {
@@ -147,14 +118,23 @@ fun AnswerButton(
     }
     Button(
         onClick = { onAnswerButtonClicked.invoke(text, question) },
-        modifier = Modifier
-            .layoutId(layoutId)
-            .fillMaxHeight(.10f)
-            .defaultMinSize(minWidth = 150.dp, minHeight = 70.dp)
-            .fillMaxWidth(.3f),
-        colors = ButtonDefaults.buttonColors(backgroundColor = backgroundColor.value)
+        shape = RoundedCornerShape(5.dp),
+        modifier = modifier,
+        colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
     ) {
-        Text(text = text)
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .requiredHeight(60.dp)
+                .requiredWidth(100.dp)
+        ) {
+            Text(
+                text = text,
+                textAlign = TextAlign.Center,
+                softWrap = true
+            )
+        }
     }
 }
 

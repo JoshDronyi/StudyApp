@@ -15,12 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
+import com.example.studyapp.util.ButtonOptions
 import com.example.studyapp.util.Screens
 import com.example.studyapp.util.formatWeekString
 
@@ -89,11 +91,11 @@ fun ProgressBanner(currentWeek: String, progress: StudentProgress) {
 }
 
 @Composable
-fun MainTextCard(cornerRadius: Int, text: String, modifier: Modifier) {
+fun MainTextCard(text: String, shape: Shape, modifier: Modifier) {
     Card(
         modifier = modifier,
         elevation = 12.dp,
-        shape = RoundedCornerShape(cornerRadius)
+        shape = shape
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -103,7 +105,8 @@ fun MainTextCard(cornerRadius: Int, text: String, modifier: Modifier) {
                 text = text,
                 modifier = Modifier
                     .fillMaxWidth(.80f),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.subtitle1
             )
         }
     }
@@ -116,13 +119,16 @@ fun StudyTopAppBar(
     onMenuClick: (ButtonOptions) -> Unit
 ) {
     TopAppBar(
-        modifier = Modifier.fillMaxWidth(),
-        contentColor = MaterialTheme.colors.background,
+        backgroundColor = Color.Transparent,
+        elevation = 0.dp,
+        modifier = Modifier.requiredHeight(60.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Spacer(Modifier.width(10.dp))
             if (destination == null || destination.route == Screens.MainScreen.route) {
                 Image(
                     imageVector = Icons.TwoTone.Menu,
@@ -148,6 +154,3 @@ fun StudyTopAppBar(
     }
 }
 
-enum class ButtonOptions {
-    MENU, BACK
-}
