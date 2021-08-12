@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
+import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.data.repo.RepositoryInterface
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -14,7 +15,7 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class QuestionListViewModel @Inject constructor(private val repository: RepositoryInterface) :
+class QuestionListViewModel @Inject constructor(private val repository: QuestionRepository) :
     ViewModel() {
 
     private val _questions = MutableLiveData<List<Question>>()
@@ -53,7 +54,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Reposito
                 currentQuestion.questionNumber,
                 questions.lastIndex
             ).also {
-                if(it) {
+                if (it) {
                     _currentQuestion.postValue(questions[currentQuestion.questionNumber])
                 }
             }

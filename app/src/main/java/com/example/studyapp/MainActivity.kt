@@ -1,5 +1,6 @@
 package com.example.studyapp
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,36 +11,33 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.imageResource
-import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.screens.currentquestionscreen.CurrentQuestionContent
 import com.example.studyapp.ui.composables.screens.homescreen.MyApp
 import com.example.studyapp.ui.composables.screens.weekquestionsscreen.WeekQuestions
+import com.example.studyapp.ui.composables.sharedcomposables.DrawerImage
+import com.example.studyapp.ui.composables.sharedcomposables.DrawerItem
+import com.example.studyapp.ui.composables.sharedcomposables.LoginScreenContent
 import com.example.studyapp.ui.composables.sharedcomposables.StudyTopAppBar
 import com.example.studyapp.ui.theme.StudyAppTheme
 import com.example.studyapp.ui.viewmodel.MainViewModel
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
+import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -61,46 +59,88 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
     @Composable
-    fun DrawerItem(
-        text: DrawerOptions = DrawerOptions.HOME,
-        onClick: (DrawerOptions) -> Unit
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+    fun AppNavigator() {
+        val scope = rememberCoroutineScope()
+        val state = rememberScaffoldState()
+        val navController = rememberNavController()
+
+
+        Scaffold(
+            backgroundColor = MaterialTheme.colors.background,
+            drawerContent = {
+                NavDrawer(navController, state = state, scope = scope)
+            },
+            drawerElevation = 8.dp,
+            drawerBackgroundColor = MaterialTheme.colors.surface,
+            scaffoldState = state
         ) {
-            Text(
-                text = text.name,
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { onClick.invoke(text) },
-                textAlign = TextAlign.Center
-            )
+            NavHost(navController = navController, startDestination = Screens.LoginScreen.route) {
+                composable(Screens.LoginScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = "",
+                                destination = navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            LoginScreen() { user ->
+                                if (user.isAnnonymous) {
+                                    Toast.makeText(
+                                        this@MainActivity,
+                                        "Sorry, had trouble getting profile Info. Continuing annonymously.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        }
+                    }
+                }
+                composable(Screens.MainScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = "Android Study App",
+                                navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            MyAppScreen(navController)
+                        }
+                    }
+                }
+                composable(Screens.WeekQuestionsScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = "Question List",
+                                destination = navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            QuestionListScreen(navController)
+                        }
+                    }
+                }
+                composable(Screens.QuestionScreen.route) {
+                    ExampleAnimation {
+                        Column {
+                            StudyTopAppBar(
+                                text = "Question Display",
+                                navController.currentDestination
+                            ) {
+                                handleButtonOptions(it, state, navController, scope)
+                            }
+                            QuestionScreen(navController)
+                        }
+                    }
+                }
+            }
         }
     }
 
-    @Composable
-
-    fun DrawerImage(imageID: Int, name: String = "Name of Account Owner", description: String) {
-        Column(
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Image(
-                ImageVector.vectorResource(id = imageID),
-                contentDescription = description,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .fillMaxWidth(.9f)
-                    .heightIn(min = 150.dp, max = 200.dp)
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(text = name)
-        }
-    }
 
     @Composable
     fun NavDrawer(navController: NavController, scope: CoroutineScope, state: ScaffoldState) {
@@ -136,65 +176,6 @@ class MainActivity : ComponentActivity() {
                     "Leader Board not yet created.",
                     Toast.LENGTH_SHORT
                 ).show()
-            }
-        }
-    }
-
-    @Composable
-    fun AppNavigator() {
-        val scope = rememberCoroutineScope()
-        val state = rememberScaffoldState()
-        val navController = rememberNavController()
-        val currentDestination = remember {
-            mutableStateOf(navController.currentDestination)
-        }
-
-        Scaffold(
-            backgroundColor = MaterialTheme.colors.background,
-            drawerContent = {
-                NavDrawer(navController, state = state, scope = scope)
-            },
-            drawerElevation = 8.dp,
-            drawerBackgroundColor = MaterialTheme.colors.surface,
-            scaffoldState = state
-        ) {
-            NavHost(navController = navController, startDestination = Screens.MainScreen.route) {
-                composable(Screens.MainScreen.route) {
-                    ExampleAnimation {
-                        Column {
-                            StudyTopAppBar(text = "Android Study App", currentDestination.value) {
-                                handleButtonOptions(it, state, navController, scope)
-                            }
-                            MyAppScreen(navController)
-                        }
-                    }
-                }
-                composable(Screens.WeekQuestionsScreen.route) {
-                    ExampleAnimation {
-                        Column {
-                            StudyTopAppBar(
-                                text = "Question List",
-                                destination = navController.currentDestination
-                            ) {
-                                handleButtonOptions(it, state, navController, scope)
-                            }
-                            QuestionListScreen(navController)
-                        }
-                    }
-                }
-                composable(Screens.QuestionScreen.route) {
-                    ExampleAnimation {
-                        Column {
-                            StudyTopAppBar(
-                                text = "Question Display",
-                                navController.currentDestination
-                            ) {
-                                handleButtonOptions(it, state, navController, scope)
-                            }
-                            QuestionScreen(navController)
-                        }
-                    }
-                }
             }
         }
     }
@@ -244,7 +225,31 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    //Screen Composable
+    //Screen Composables
+
+    @Composable
+    fun LoginScreen(
+        userViewModel: UserViewModel = viewModel(),
+        onLoginSuccess: (User) -> Unit
+    ) {
+
+        val currentUser by userViewModel.currentUser.observeAsState()
+
+        LoginScreenContent() { verificationOption, email, password ->
+            when (verificationOption) {
+                VerificationOptions.EmailPassword -> {
+                    userViewModel.signInWithEmail(email, password)
+                    currentUser?.let { onLoginSuccess.invoke(it) }
+                }
+                VerificationOptions.NewUser -> {
+                    userViewModel.signUpWithEmail(email, password)
+                    currentUser?.let { onLoginSuccess.invoke(it) }
+                }
+            }
+        }
+
+    }
+
     @Composable
     fun MyAppScreen(navController: NavController) {
         val TAG = "My App Screen"
