@@ -1,5 +1,6 @@
 package com.example.studyapp.ui.composables.sharedcomposables
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -130,21 +131,26 @@ fun StudyTopAppBar(
             modifier = Modifier.fillMaxWidth()
         ) {
             Spacer(Modifier.width(10.dp))
-            if (destination == null || destination.route == Screens.MainScreen.route) {
-                Image(
-                    imageVector = Icons.TwoTone.Menu,
-                    contentDescription = "Toggle the drawer menu",
-                    Modifier.clickable { onMenuClick.invoke(ButtonOptions.MENU) },
-                    colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
-                )
-            } else {
-                Image(
-                    imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Toggle the drawer menu",
-                    Modifier.clickable { onMenuClick.invoke(ButtonOptions.BACK) },
-                    colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
-                )
+            when (destination?.route) {
+                null, Screens.LoginScreen.route, Screens.MainScreen.route -> {
+                    Image(
+                        imageVector = Icons.TwoTone.Menu,
+                        contentDescription = "Toggle the drawer menu",
+                        Modifier.clickable { onMenuClick.invoke(ButtonOptions.MENU) },
+                        colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
+                    )
+                }
+                Screens.WeekQuestionsScreen.route, Screens.QuestionScreen.route -> {
+                    Image(
+                        imageVector = Icons.Filled.ArrowBack,
+                        contentDescription = "Toggle the drawer menu",
+                        Modifier.clickable { onMenuClick.invoke(ButtonOptions.BACK) },
+                        colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
+                    )
+
+                }
             }
+
             Text(
                 text = text,
                 Modifier
@@ -157,8 +163,9 @@ fun StudyTopAppBar(
 
 @Composable
 fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: String) -> Unit) {
-    var emailValue by remember { mutableStateOf("Email") }
-    var passwordValue by remember { mutableStateOf("Password") }
+    var emailValue by remember { mutableStateOf("") }
+    var passwordValue by remember { mutableStateOf("") }
+    val TAG = "EMAIL_PASSWORD_BLOCK"
     Column(
         modifier = Modifier.fillMaxWidth(.80f),
         verticalArrangement = Arrangement.Center,
@@ -169,14 +176,16 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
             onValueChange = { value ->
                 emailValue = value
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(text = "Email") }
         )
         OutlinedTextField(
             value = passwordValue,
             onValueChange = { value ->
                 passwordValue = value
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(text = "Password") }
         )
 
         Spacer(modifier = Modifier.heightIn(min = 30.dp, max = 60.dp))
@@ -186,6 +195,10 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
                     VerificationOptions.EmailPassword,
                     emailValue,
                     passwordValue
+                )
+                Log.e(
+                    TAG,
+                    "Sign in button clicked with email:$emailValue and password:$passwordValue"
                 )
             },
             modifier = Modifier.fillMaxWidth(.6f)
@@ -251,7 +264,8 @@ fun LoginScreenContent(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier.fillMaxSize()
     ) {
         MainTextCard(
             text = "Android App",

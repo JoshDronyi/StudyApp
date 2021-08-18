@@ -9,4 +9,10 @@ data class User(
     val email: String?,
     val phoneNumber: String?,
     val isAnnonymous: Boolean
-)
+) {
+    companion object {
+        fun newBlankInstance(): User {
+            return User("", null, null, null, null, true)
+        }
+    }
+}

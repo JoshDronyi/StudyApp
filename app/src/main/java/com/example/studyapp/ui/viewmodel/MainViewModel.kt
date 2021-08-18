@@ -5,12 +5,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.NavController
-import androidx.navigation.NavDestination
-import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.repo.QuestionRepository
-import com.example.studyapp.data.repo.RepositoryInterface
+import com.example.studyapp.util.State.QuestionApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -22,8 +19,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(private val repo: QuestionRepository) : ViewModel() {
 
-    private val _apiState = MutableLiveData<ApiState<List<Question>>>(ApiState.Sleep)
-    val apiState: LiveData<ApiState<List<Question>>>
+    private val _apiState =
+        MutableLiveData<QuestionApiState<List<Question>>>(QuestionApiState.Sleep())
+    val apiState: LiveData<QuestionApiState<List<Question>>>
         get() = _apiState
 
 
@@ -33,7 +31,7 @@ class MainViewModel @Inject constructor(private val repo: QuestionRepository) : 
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) {
         Log.e(TAG, "getQuestions:  week was $week")
-        _apiState.value = ApiState.Loading
+        _apiState.value = QuestionApiState.Loading()
         viewModelScope.launch(Dispatchers.IO) {
             Log.e(TAG, "getQuestions: Launched coroutine.")
             repo.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
@@ -45,12 +43,12 @@ class MainViewModel @Inject constructor(private val repo: QuestionRepository) : 
                         internet.questionStatus = questions[index].questionStatus
                     }
                 repo.saveQuestionsInDatabase(dataFromTheInternet)
-                _apiState.postValue(ApiState.Success(dataFromTheInternet))
+                _apiState.postValue(QuestionApiState.Success(dataFromTheInternet))
             }
         }
     }
 
     fun changeState() {
-        _apiState.postValue(ApiState.Sleep)
+        _apiState.postValue(QuestionApiState.Sleep())
     }
 }

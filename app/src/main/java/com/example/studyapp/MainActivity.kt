@@ -1,6 +1,5 @@
 package com.example.studyapp
 
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -24,7 +23,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.studyapp.data.model.ApiState
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.screens.currentquestionscreen.CurrentQuestionContent
@@ -39,6 +37,7 @@ import com.example.studyapp.ui.viewmodel.MainViewModel
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
+import com.example.studyapp.util.State.QuestionApiState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,13 +58,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     @Composable
     fun AppNavigator() {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
         val navController = rememberNavController()
-
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
@@ -78,6 +75,7 @@ class MainActivity : ComponentActivity() {
         ) {
             NavHost(navController = navController, startDestination = Screens.LoginScreen.route) {
                 composable(Screens.LoginScreen.route) {
+                    val TAG = "MAIN_ACT_COMPOSABLE"
                     ExampleAnimation {
                         Column {
                             StudyTopAppBar(
@@ -87,12 +85,15 @@ class MainActivity : ComponentActivity() {
                                 handleButtonOptions(it, state, navController, scope)
                             }
                             LoginScreen() { user ->
-                                if (user.isAnnonymous) {
+                                if (user?.isAnnonymous == true) {
                                     Toast.makeText(
                                         this@MainActivity,
-                                        "Sorry, had trouble getting profile Info. Continuing annonymously.",
+                                        "Sorry, had trouble getting profile Info. Continuing anonymously.",
                                         Toast.LENGTH_SHORT
                                     ).show()
+                                } else {
+                                    //Manipulate user info here.
+                                    Log.e(TAG, "AppNavigator: user is anonymous or null. $user")
                                 }
                             }
                         }
@@ -225,26 +226,39 @@ class MainActivity : ComponentActivity() {
         )
     }
 
-    //Screen Composables
+    //Screen Composable
 
     @Composable
     fun LoginScreen(
         userViewModel: UserViewModel = viewModel(),
-        onLoginSuccess: (User) -> Unit
+        onLoginSuccess: (User?) -> Unit
     ) {
 
-        val currentUser by userViewModel.currentUser.observeAsState()
+        val currentUser by userViewModel.loginState.collectAsState()
+        val TAG = "LOGIN_SCREEN"
 
         LoginScreenContent() { verificationOption, email, password ->
+            Log.e(
+                TAG,
+                "exiting screen content. \n VerificationOption:$verificationOption \n Email:$email \n Password:$password"
+            )
             when (verificationOption) {
                 VerificationOptions.EmailPassword -> {
+                    Log.e(TAG, "LoginScreen: in Verification option email password.")
                     userViewModel.signInWithEmail(email, password)
-                    currentUser?.let { onLoginSuccess.invoke(it) }
+                    Log.e(TAG, "LoginScreen: ViewModel called. currentUser is ${currentUser.user}")
                 }
                 VerificationOptions.NewUser -> {
                     userViewModel.signUpWithEmail(email, password)
-                    currentUser?.let { onLoginSuccess.invoke(it) }
+                    currentUser.let { onLoginSuccess.invoke(it.user) }
                 }
+            }
+        }
+
+        SideEffect {
+            currentUser?.let {
+                Log.e(TAG, "LoginScreen: Invoking LoginSuccess.")
+                onLoginSuccess.invoke(currentUser.user)
             }
         }
 
@@ -253,7 +267,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyAppScreen(navController: NavController) {
         val TAG = "My App Screen"
-        val apiState by mainViewModel.apiState.observeAsState()
+        val apiState = mainViewModel.apiState.observeAsState()
 
         Column {
             MyApp { week ->
@@ -264,13 +278,14 @@ class MainActivity : ComponentActivity() {
         Log.e(TAG, "Api state was $apiState")
 
         SideEffect {
-            apiState?.let {
+            apiState.value?.let {
                 checkApiState(it) { route ->
                     navController.navigate(route)
                 }
             }
         }
     }
+
 
     @Composable
     fun QuestionListScreen(navController: NavController) {
@@ -313,17 +328,17 @@ class MainActivity : ComponentActivity() {
 
     //Helper functions
     private fun checkApiState(
-        questionListState: ApiState<List<Question>>,
+        questionListState: QuestionApiState<List<Question>>,
         navigate: (String) -> Unit
     ) {
         with(questionListState) {
             when (this) {
-                is ApiState.Success -> {
+                is QuestionApiState.Success -> {
                     Log.e(CHECK_TAG, "MyAppScreen: Success: $this")
                     questionListViewModel.setQuestionList(this.questionList)
                     navigate.invoke(Screens.WeekQuestionsScreen.route)
                 }
-                is ApiState.Sleep, ApiState.Loading -> {
+                is QuestionApiState.Sleep, is QuestionApiState.Loading -> {
                     Log.e(CHECK_TAG, "STATE : ${this})")
                 }
                 else -> {
