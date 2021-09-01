@@ -33,20 +33,20 @@ fun MyApp(navigation: (String) -> Unit) {
         ) {
 
             MainTextCard(
-                cornerRadius = CORNER_RADIUS,
                 text = "Android Quiz",
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
-                    .fillMaxHeight(.20f)
+                    .fillMaxHeight(.20f),
+                shape = RoundedCornerShape(25.dp)
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(80.dp))
 
             Card(
                 elevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth(.9f),
-                shape = RoundedCornerShape(CORNER_RADIUS)
+                shape = RoundedCornerShape(10.dp)
             ) {
                 Column(
                     modifier = Modifier.heightIn(min = 350.dp, max = 600.dp),

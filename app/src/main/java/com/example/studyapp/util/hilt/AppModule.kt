@@ -8,8 +8,12 @@ import com.example.studyapp.data.local.Database
 import com.example.studyapp.data.local.QuestionDAO
 import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.data.repo.RepositoryInterface
+import com.example.studyapp.data.repo.UserRepository
 import com.example.studyapp.util.DATABASE_NAME
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.ktx.Firebase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -33,10 +37,20 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideRepository(
+    fun provideQuestionRepository(
         dao: QuestionDAO,
         firebaseDatabase: FirebaseDatabase
-    ) = QuestionRepository(dao, firebaseDatabase) as RepositoryInterface
+    ) = QuestionRepository(dao, firebaseDatabase)
+
+
+    @Singleton
+    @Provides
+    fun provideAuth() = FirebaseAuth.getInstance()
+
+    @Singleton
+    @Provides
+    fun provideUserRepository(auth: FirebaseAuth) = UserRepository(auth)
+
 
     @Singleton
     @Provides
@@ -47,6 +61,7 @@ object AppModule {
     @Singleton
     @Provides
     fun firebaseDatabase() = FirebaseDatabase.getInstance()
+
 
     private val migration_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {

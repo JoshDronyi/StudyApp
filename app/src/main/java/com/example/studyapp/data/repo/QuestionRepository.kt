@@ -21,11 +21,12 @@ class QuestionRepository @Inject constructor(
 ) : RepositoryInterface {
 
     val TAG = "Question Repository"
+    private lateinit var ref: DatabaseReference
 
     @ExperimentalCoroutinesApi
-    override suspend fun getQuestionsByWeek(week: String) = callbackFlow {
+    suspend fun getQuestionsByWeek(week: String) = callbackFlow {
         try {
-            val ref = firebaseDatabase.getReference("/$week")
+            ref = firebaseDatabase.getReference("/$week")
             val questions = mutableListOf<Question>()
             Log.e(
                 TAG,
@@ -52,6 +53,7 @@ class QuestionRepository @Inject constructor(
                             error.toException().printStackTrace()
                         }"
                     )
+
                 }
             }
             Log.e(TAG, "getQuestionsByWeek: adding callback")
@@ -62,6 +64,7 @@ class QuestionRepository @Inject constructor(
             }
         } catch (e: IllegalStateException) {
             Log.e("EXCEPTION", e.message.toString())
+            e.printStackTrace()
         }
     }
 
@@ -69,16 +72,20 @@ class QuestionRepository @Inject constructor(
         ref.removeEventListener(callback)
     }
 
-    override suspend fun saveQuestionsInDatabase(questions: List<Question>) {
+    suspend fun saveQuestionsInDatabase(questions: List<Question>) {
         databaseDao.insertQuestions(*questions.toTypedArray())
     }
 
-    override suspend fun getQuestionsByWeekOnDatabase(week: String) = flow {
+    suspend fun getQuestionsByWeekOnDatabase(week: String) = flow {
         emit(databaseDao.getQuestionsByWeek(formatWeekStringToInt(week)).first())
     }
 
 
-    override fun setQuestions() {
+    fun setQuestions() {
 
+    }
+
+    override fun onDestroy() {
+        ref.onDisconnect()
     }
 }
