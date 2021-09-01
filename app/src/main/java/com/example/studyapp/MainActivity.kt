@@ -3,9 +3,9 @@ package com.example.studyapp
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -23,8 +23,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import coil.annotation.ExperimentalCoilApi
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.screens.currentquestionscreen.CurrentQuestionContent
 import com.example.studyapp.ui.composables.screens.homescreen.MyApp
 import com.example.studyapp.ui.composables.screens.weekquestionsscreen.WeekQuestions
@@ -38,19 +38,22 @@ import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.QuestionApiState
+import com.example.studyapp.util.State.UserApiState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     private val questionListViewModel: QuestionListViewModel by viewModels()
+    private val userViewModel: UserViewModel by viewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        userViewModel.observeRepo()
         setContent {
             StudyAppTheme {
                 AppNavigator()
@@ -58,24 +61,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @ExperimentalCoilApi
     @Composable
-    fun AppNavigator() {
+    fun AppNavigator(
+        userViewModel: UserViewModel = viewModel()
+    ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
         val navController = rememberNavController()
+        val currentUserState by userViewModel.loginScreenState.collectAsState(initial = UserApiState.Sleep())
+
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
-                NavDrawer(navController, state = state, scope = scope)
+                NavDrawer(screenState = currentUserState, state = state, scope = scope)
             },
             drawerElevation = 8.dp,
             drawerBackgroundColor = MaterialTheme.colors.surface,
             scaffoldState = state
         ) {
-            NavHost(navController = navController, startDestination = Screens.LoginScreen.route) {
+            NavHost(
+                navController = navController,
+                startDestination = Screens.LoginScreen.route
+            ) {
                 composable(Screens.LoginScreen.route) {
-                    val TAG = "MAIN_ACT_COMPOSABLE"
                     ExampleAnimation {
                         Column {
                             StudyTopAppBar(
@@ -84,17 +94,8 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 handleButtonOptions(it, state, navController, scope)
                             }
-                            LoginScreen() { user ->
-                                if (user?.isAnnonymous == true) {
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Sorry, had trouble getting profile Info. Continuing anonymously.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    //Manipulate user info here.
-                                    Log.e(TAG, "AppNavigator: user is anonymous or null. $user")
-                                }
+                            LoginScreen(currentUserState) { userState ->
+                                handleUserState(userState, navController)
                             }
                         }
                     }
@@ -142,17 +143,80 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun handleUserState(userState: UserApiState<Any>, navController: NavController) {
+        val TAG = "MainActivity"
+        when (userState) {
+            is UserApiState.Loading, is UserApiState.Sleep -> {
+                Toast.makeText(this, "State is $userState", Toast.LENGTH_LONG).show()
+                Log.e(
+                    TAG,
+                    "LoginScreen: User changed but not valid yet. Loading or asleep."
+                )
+            }
+            is UserApiState.Success -> {
+                val user = userState.user
+                if (!user.isDefault) {
+                    Toast.makeText(
+                        this,
+                        "Got a valid user object. Username: ${user.name} email: ${user.email}",
+                        Toast.LENGTH_SHORT
+                    ).show()
 
+                    navController.navigate(Screens.MainScreen.route)
+                } else {
+                    Toast.makeText(this, "Default User received.", Toast.LENGTH_LONG).show()
+                    Log.e(TAG, "Default User retrieved. Ignoring.")
+                }
+            }
+            is UserApiState.Error -> {
+                val message = userState.message
+                Toast
+                    .makeText(
+                        this,
+                        "Sorry, had trouble getting profile Info. Message: $message",
+                        Toast.LENGTH_LONG
+                    )
+                    .show()
+                Log.e(TAG, "AppNavigator: Error message: $message")
+            }
+        }
+    }
+
+
+    @ExperimentalCoilApi
     @Composable
-    fun NavDrawer(navController: NavController, scope: CoroutineScope, state: ScaffoldState) {
+    fun NavDrawer(
+        screenState: UserApiState<Any>,
+        navController: NavController = rememberNavController(),
+        scope: CoroutineScope = rememberCoroutineScope(),
+        state: ScaffoldState = rememberScaffoldState()
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            DrawerImage(
-                imageID = R.drawable.ic_account_circle,
-                description = "Image of account holder"
-            )
+            when (screenState) {
+                is UserApiState.Success -> {
+                    with(screenState.user) {
+                        DrawerImage(
+                            imageID = R.drawable.ic_account_circle,
+                            description = "Image of account holder",
+                            imageUrl = photoUrl,
+                            name = name
+                        )
+                    }
+
+                }
+                else -> {
+                    DrawerImage(
+                        imageID = R.drawable.ic_account_circle,
+                        description = "Image of account holder",
+                        imageUrl = null
+                    )
+
+                }
+            }
+
             Divider()
             DrawerItem(text = DrawerOptions.HOME) {
                 closeDrawer(state, scope)
@@ -230,14 +294,15 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun LoginScreen(
+        loginScreenState: UserApiState<Any>,
         userViewModel: UserViewModel = viewModel(),
-        onLoginSuccess: (User?) -> Unit
+        onLoginSuccess: (UserApiState<Any>) -> Unit
     ) {
-
-        val currentUser by userViewModel.loginState.collectAsState()
         val TAG = "LOGIN_SCREEN"
 
-        LoginScreenContent() { verificationOption, email, password ->
+        var isNewUserSignUp by remember { mutableStateOf(false) }
+
+        LoginScreenContent(isNewUserSignUp) { verificationOption, email, password ->
             Log.e(
                 TAG,
                 "exiting screen content. \n VerificationOption:$verificationOption \n Email:$email \n Password:$password"
@@ -246,20 +311,75 @@ class MainActivity : ComponentActivity() {
                 VerificationOptions.EmailPassword -> {
                     Log.e(TAG, "LoginScreen: in Verification option email password.")
                     userViewModel.signInWithEmail(email, password)
-                    Log.e(TAG, "LoginScreen: ViewModel called. currentUser is ${currentUser.user}")
+                    Log.e(
+                        TAG,
+                        "LoginScreen: ViewModel called. currentUser is $loginScreenState"
+                    )
+
                 }
                 VerificationOptions.NewUser -> {
-                    userViewModel.signUpWithEmail(email, password)
-                    currentUser.let { onLoginSuccess.invoke(it.user) }
+                    if (isNewUserSignUp) {
+                        Log.e(
+                            TAG,
+                            "LoginScreen: New User sign up: $isNewUserSignUp, going to viewModel"
+                        )
+                        userViewModel.signUpWithEmail(email, password)
+                    } else {
+                        Log.e(
+                            TAG,
+                            "LoginScreen: New User sign up: $isNewUserSignUp, changing value for recomposition."
+                        )
+                        //change the value to recompose LoginScreenContent.
+                        isNewUserSignUp = true
+                    }
+                }
+                VerificationOptions.Back -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: New User sign up: $isNewUserSignUp, changing value for recomposition."
+                    )
+                    //change the value to recompose LoginScreenContent.
+                    isNewUserSignUp = false
                 }
             }
         }
 
         SideEffect {
-            currentUser?.let {
-                Log.e(TAG, "LoginScreen: Invoking LoginSuccess.")
-                onLoginSuccess.invoke(currentUser.user)
+            Log.e(TAG, "LoginScreen: LAUNCHING EFFECT!!!")
+            when (loginScreenState) {
+                is UserApiState.Sleep -> {
+                    Log.e(TAG, "LoginScreen: Invoking Login Sleep. $loginScreenState")
+                    Toast.makeText(this, "Not now, State is sleeping.", Toast.LENGTH_SHORT).show()
+                }
+                is UserApiState.Success -> {
+                    val user = loginScreenState.user
+                    if (!user.isDefault) {
+                        Log.e(TAG, "LoginScreen: Invoking Login Success. $loginScreenState")
+                        onLoginSuccess.invoke(loginScreenState)
+                        Toast.makeText(this, "New User secured ${user.uid}", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
+                        Toast.makeText(this, "Got the default user back", Toast.LENGTH_SHORT).show()
+                        Log.e(
+                            TAG,
+                            "LoginScreen: Default user was captured. Still not ready. $user"
+                        )
+                    }
+                }
+                is UserApiState.Loading -> {
+                    Toast.makeText(this, "Resource is currently loading", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "LoginScreen: Invoking Loading screen. $loginScreenState")
+                }
+                is UserApiState.Error -> {
+                    Toast.makeText(
+                        this,
+                        "OOps there was an error!!! ${loginScreenState.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.e(TAG, "LoginScreen: ERROR: ${loginScreenState.message}")
+                }
             }
+
         }
 
     }

@@ -49,14 +49,16 @@ fun List<Question>.generateStudentProgress(): StudentProgress {
 }
 
 fun FirebaseUser.asUser(): User {
-    return User(
+    val user = User(
         uid = this.uid,
         phoneNumber = this.phoneNumber,
         name = this.displayName,
         email = this.email,
         photoUrl = this.photoUrl,
-        isAnnonymous = this.isAnonymous
+        isDefault = this.isAnonymous
     )
+    Log.e("asUserHelper", "Creating new User: $user")
+    return user
 }
 
 

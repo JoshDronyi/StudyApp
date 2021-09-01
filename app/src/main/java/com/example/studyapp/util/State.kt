@@ -29,18 +29,18 @@ sealed class State {
 
 
     sealed class ScreenState<out T> : State() {
-        data class LoginScreenState(
-            var user: User
-        ) : State()
+        data class LoginScreenState<out T>(
+            var userLoginState: UserApiState<Any>
+        ) : ScreenState<T>()
 
         object MainScreenState : State()
-        data class QuestionListScreenState(
+        data class QuestionListScreenState<out T>(
             val questionList: List<Question>
-        ) : State()
+        ) : ScreenState<T>()
 
-        data class QuestionScreenState(
+        data class QuestionScreenState<out T>(
             val currentQuestion: Question
-        ) : State()
+        ) : ScreenState<T>()
     }
 
 

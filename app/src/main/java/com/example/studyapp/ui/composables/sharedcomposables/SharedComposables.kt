@@ -1,5 +1,6 @@
 package com.example.studyapp.ui.composables.sharedcomposables
 
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,12 +22,15 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.util.*
+import coil.annotation.ExperimentalCoilApi
+import coil.compose.rememberImagePainter
 
 @Composable
 fun QuestionCard(
@@ -217,6 +221,93 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
     }
 }
 
+@Composable
+fun SignUpBlock(
+    inValidInput: Boolean,
+    onClick: (VerificationOptions, email: String, password: String) -> Unit
+) {
+    var usernameText by remember { mutableStateOf("") }
+    var passwordText by remember { mutableStateOf("") }
+    var verifyPWText by remember { mutableStateOf("") }
+    var emailText by remember { mutableStateOf("") }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
+    ) {
+        //UserName
+        OTFBuilder(value = usernameText, label = "Username", inValidInput = inValidInput) {
+            usernameText = it
+        }
+        //Email
+        OTFBuilder(value = emailText, label = "Email", inValidInput = inValidInput) {
+            emailText = it
+        }
+        //Password
+        OTFBuilder(value = passwordText, label = "Password", inValidInput = inValidInput) {
+            passwordText = it
+        }
+        //Verify Password
+        OTFBuilder(value = verifyPWText, label = "Verify Password", inValidInput = inValidInput) {
+            verifyPWText = it
+        }
+
+        Spacer(modifier = Modifier.height(LINE_SIZE.dp))
+
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Button(onClick = {
+                onClick.invoke(VerificationOptions.Back, "", "")
+            }) {
+                Text(text = "Back")
+            }
+
+            Spacer(modifier = Modifier.width(LINE_SIZE.dp))
+            Button(onClick = {
+                onClick.invoke(VerificationOptions.NewUser, emailText, passwordText)
+            }) {
+                Text(text = "Sign Up!")
+            }
+        }
+    }
+
+}
+
+@Preview(showBackground = true)
+@Composable
+fun Preview() {
+    var value by remember {
+        mutableStateOf("")
+    }
+    OTFBuilder(value = value, label = "Thingy", inValidInput = true) {
+        value = it
+    }
+}
+
+@Composable
+fun OTFBuilder(
+    value: String = "",
+    label: String,
+    inValidInput: Boolean,
+    onValueChange: (String) -> Unit
+) {
+    Column(
+        verticalArrangement = Arrangement.SpaceEvenly,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        OutlinedTextField(value = value, onValueChange = onValueChange, label = {
+            Text(text = label)
+        })
+        if (inValidInput) {
+            Text(
+                text = "Sorry, $value is not an accepted value for $label",
+                textAlign = TextAlign.Start,
+                color = Color.Red
+            )
+        }
+    }
+}
 
 @Composable
 fun DrawerItem(
@@ -238,28 +329,48 @@ fun DrawerItem(
     }
 }
 
+@ExperimentalCoilApi
 @Composable
-fun DrawerImage(imageID: Int, name: String = "Name of Account Owner", description: String) {
+fun DrawerImage(
+    imageUrl: Uri?,
+    imageID: Int = 0,
+    name: String? = "Name of Account Owner",
+    description: String
+) {
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(16.dp)
     ) {
-        Image(
-            ImageVector.vectorResource(id = imageID),
-            contentDescription = description,
-            modifier = Modifier
-                .clip(CircleShape)
-                .fillMaxWidth(.9f)
-                .heightIn(min = 150.dp, max = 200.dp)
-        )
+        if (imageUrl == null) {
+            Image(
+                ImageVector.vectorResource(id = imageID),
+                contentDescription = description,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .fillMaxWidth(.9f)
+                    .heightIn(min = 150.dp, max = 200.dp)
+            )
+        } else {
+            Image(
+                painter = rememberImagePainter(data = imageUrl.path),
+                contentDescription = description,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .fillMaxWidth(.9f)
+                    .heightIn(min = 150.dp, max = 200.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(20.dp))
-        Text(text = name)
+        if (name != null) {
+            Text(text = name)
+        }
     }
 }
 
 @Composable
 fun LoginScreenContent(
+    newUserSignUp: Boolean,
     onLoginAttempt: (verificationOption: VerificationOptions, email: String, password: String) -> Unit
 ) {
     Column(
@@ -268,14 +379,21 @@ fun LoginScreenContent(
         modifier = Modifier.fillMaxSize()
     ) {
         MainTextCard(
-            text = "Android App",
+            text = "Android Study App",
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth(.7f)
                 .fillMaxHeight(.2f)
         )
-        EmailPasswordBlock { verificationOption, email, password ->
-            onLoginAttempt.invoke(verificationOption, email, password)
+        if (newUserSignUp) {
+            SignUpBlock(inValidInput = false) { vOptions, email, password ->
+                onLoginAttempt.invoke(vOptions, email, password)
+            }
+        } else {
+            EmailPasswordBlock { verificationOption, email, password ->
+                onLoginAttempt.invoke(verificationOption, email, password)
+            }
         }
+
     }
 }

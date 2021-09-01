@@ -3,16 +3,14 @@ package com.example.studyapp.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.User
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.util.State.ScreenState
+import com.example.studyapp.util.State.ScreenState.LoginScreenState
 import com.example.studyapp.util.State.UserApiState
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -23,51 +21,48 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     constructor() : this(UserRepository(FirebaseAuth.getInstance()))
 
     private val TAG = "USER_VIEW_MODEL"
-    val userData: MutableStateFlow<UserApiState<List<Question>>> =
+
+
+    private val _loginScreenState: MutableStateFlow<UserApiState<Any>> =
         MutableStateFlow(UserApiState.Sleep())
 
+    val loginScreenState: StateFlow<UserApiState<Any>>
+        get() = _loginScreenState
 
-    init {
-        observeRepo()
-    }
-
-
-    private val _loginState: MutableStateFlow<ScreenState.LoginScreenState> =
-        MutableStateFlow(ScreenState.LoginScreenState(User.newBlankInstance()))
-    val loginState: StateFlow<ScreenState.LoginScreenState>
-        get() = _loginState
-
-    private fun observeRepo() = viewModelScope.launch {
+    fun observeRepo() = viewModelScope.launch(Dispatchers.IO) {
         Log.e(TAG, "observeRepo: observing current user from repo")
-        repo.currentUser.collect { user ->
-            Log.e(TAG, "observeRepo: received new user object. $user")
-            _loginState.value.user = user
+        repo.currentUser.collect { newUser ->
+            Log.e(TAG, "logged in user returned: $newUser")
+            Log.e(TAG, "observeRepo: Setting state of loginScreenState.")
+            _loginScreenState.value = UserApiState.Success(newUser)
         }
     }
 
-
-    fun signInWithEmail(email: String, password: String) {
-        Log.e(TAG, "signInWithEmail: calling the repo")
-        viewModelScope.launch {
-            repo.signInWithEmail(email, password).collect {
-                Log.e(TAG, "logged in user returned: $it")
-                it?.let {
-                    _loginState.value.user = it
+    fun signInWithEmail(email: String, password: String) = viewModelScope.launch(Dispatchers.IO) {
+        Log.e(TAG, "signUpWithEmail: Calling Repo with result")
+        repo.signInWithEmail(email, password)
+            .onStart {
+                Log.e(TAG, "signInWithEmail: starting sign in. setting value to loading.")
+                _loginScreenState.tryEmit(UserApiState.Loading())
+            }
+            .onCompletion {
+                Log.e(TAG, "signInWithEmail: Complete: $newUser")
+                newUser?.let { user ->
+                    _loginScreenState.tryEmit(UserApiState.Success(user))
                 }
             }
-        }
-        Log.e(TAG, "signInWithEmail: leaving viewModel")
-    }
-
-    fun signUpWithEmail(email: String, password: String) {
-        viewModelScope.launch {
-            repo.createNewUserProfile(email, password).collect {
-                Log.e(TAG, "Received new user result: $it")
-                _loginState.value.user = it
+            .collect { newUser ->
+                Log.e(TAG, "signInWithEmail: Got a new user in the viewModel -> $newUser")
+                newUser?.let { user ->
+                    _loginScreenState.tryEmit(UserApiState.Success(user))
+                }
             }
-        }
-
     }
 
 
+    fun signUpWithEmail(email: String, password: String): Flow<User?> {
+        Log.e(TAG, "signUpWithEmail: Calling Repo with result")
+        return repo.createNewUserProfile(email, password)
+    }
 }
+
