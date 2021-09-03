@@ -18,6 +18,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
@@ -49,11 +50,11 @@ class MainActivity : AppCompatActivity() {
     private val mainViewModel: MainViewModel by viewModels()
     private val questionListViewModel: QuestionListViewModel by viewModels()
     private val userViewModel: UserViewModel by viewModels()
+    private val TAG = "MainActivity"
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        userViewModel.observeRepo()
         setContent {
             StudyAppTheme {
                 AppNavigator()
@@ -69,7 +70,7 @@ class MainActivity : AppCompatActivity() {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
         val navController = rememberNavController()
-        val currentUserState by userViewModel.loginScreenState.collectAsState(initial = UserApiState.Sleep())
+        val currentUserState by userViewModel.loginScreenState.observeAsState()
 
 
         Scaffold(
@@ -94,7 +95,11 @@ class MainActivity : AppCompatActivity() {
                             ) {
                                 handleButtonOptions(it, state, navController, scope)
                             }
-                            LoginScreen(currentUserState) { userState ->
+                            LoginScreen(
+                                currentUserState,
+                                onVerificationSelected = ::onVerificationSelected
+                            ) { userState ->
+                                Log.e(TAG, "AppNavigator: User state recieved. $userState")
                                 handleUserState(userState, navController)
                             }
                         }
@@ -107,9 +112,10 @@ class MainActivity : AppCompatActivity() {
                                 text = "Android Study App",
                                 navController.currentDestination
                             ) {
+                                Log.e(TAG, "AppNavigator: Handling Button Options")
                                 handleButtonOptions(it, state, navController, scope)
                             }
-                            MyAppScreen(navController)
+                            MyAppScreen()
                         }
                     }
                 }
@@ -143,8 +149,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun onVerificationSelected(
+        verificationOptions: VerificationOptions,
+        email: String,
+        password: String
+    ) {
+        when (verificationOptions) {
+            VerificationOptions.EmailPassword -> {
+                lifecycleScope.launchWhenResumed {
+                    userViewModel.signInWithEmail(email, password)
+                }
+            }
+            else -> {
+                Log.e("MainActivity", "onVerificactionSelected: This should never happen. Dumbass.")
+            }
+        }
+    }
+
     private fun handleUserState(userState: UserApiState<Any>, navController: NavController) {
-        val TAG = "MainActivity"
         when (userState) {
             is UserApiState.Loading, is UserApiState.Sleep -> {
                 Toast.makeText(this, "State is $userState", Toast.LENGTH_LONG).show()
@@ -161,8 +183,9 @@ class MainActivity : AppCompatActivity() {
                         "Got a valid user object. Username: ${user.name} email: ${user.email}",
                         Toast.LENGTH_SHORT
                     ).show()
-
-                    navController.navigate(Screens.MainScreen.route)
+                    if (navController.currentDestination?.route != Screens.MainScreen.route) {
+                        navController.navigate(Screens.MainScreen.route)
+                    }
                 } else {
                     Toast.makeText(this, "Default User received.", Toast.LENGTH_LONG).show()
                     Log.e(TAG, "Default User retrieved. Ignoring.")
@@ -179,6 +202,9 @@ class MainActivity : AppCompatActivity() {
                     .show()
                 Log.e(TAG, "AppNavigator: Error message: $message")
             }
+            is UserApiState.Default -> {
+                Log.e(TAG, "Default user found.")
+            }
         }
     }
 
@@ -186,7 +212,7 @@ class MainActivity : AppCompatActivity() {
     @ExperimentalCoilApi
     @Composable
     fun NavDrawer(
-        screenState: UserApiState<Any>,
+        screenState: UserApiState<Any>?,
         navController: NavController = rememberNavController(),
         scope: CoroutineScope = rememberCoroutineScope(),
         state: ScaffoldState = rememberScaffoldState()
@@ -200,12 +226,11 @@ class MainActivity : AppCompatActivity() {
                     with(screenState.user) {
                         DrawerImage(
                             imageID = R.drawable.ic_account_circle,
-                            description = "Image of account holder",
+                            description = name ?: "Bob the builder",
                             imageUrl = photoUrl,
                             name = name
                         )
                     }
-
                 }
                 else -> {
                     DrawerImage(
@@ -294,11 +319,12 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun LoginScreen(
-        loginScreenState: UserApiState<Any>,
-        userViewModel: UserViewModel = viewModel(),
+        loginScreenState: UserApiState<Any>?,
+        onVerificationSelected: (VerificationOptions, email: String, password: String) -> Unit,
         onLoginSuccess: (UserApiState<Any>) -> Unit
     ) {
         val TAG = "LOGIN_SCREEN"
+        Log.e(TAG, "LoginScreen: drawing Login Screen")
 
         var isNewUserSignUp by remember { mutableStateOf(false) }
 
@@ -307,10 +333,13 @@ class MainActivity : AppCompatActivity() {
                 TAG,
                 "exiting screen content. \n VerificationOption:$verificationOption \n Email:$email \n Password:$password"
             )
+
             when (verificationOption) {
                 VerificationOptions.EmailPassword -> {
                     Log.e(TAG, "LoginScreen: in Verification option email password.")
-                    userViewModel.signInWithEmail(email, password)
+                    lifecycleScope.launchWhenResumed {
+                        onVerificationSelected.invoke(verificationOption, email, password)
+                    }
                     Log.e(
                         TAG,
                         "LoginScreen: ViewModel called. currentUser is $loginScreenState"
@@ -358,13 +387,11 @@ class MainActivity : AppCompatActivity() {
                         onLoginSuccess.invoke(loginScreenState)
                         Toast.makeText(this, "New User secured ${user.uid}", Toast.LENGTH_SHORT)
                             .show()
-                    } else {
-                        Toast.makeText(this, "Got the default user back", Toast.LENGTH_SHORT).show()
-                        Log.e(
-                            TAG,
-                            "LoginScreen: Default user was captured. Still not ready. $user"
-                        )
                     }
+                }
+                is UserApiState.Default -> {
+                    Toast.makeText(this, " Got the default user back", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "LoginScreen: Default user captured. Still not ready")
                 }
                 is UserApiState.Loading -> {
                     Toast.makeText(this, "Resource is currently loading", Toast.LENGTH_SHORT).show()
@@ -378,16 +405,19 @@ class MainActivity : AppCompatActivity() {
                     ).show()
                     Log.e(TAG, "LoginScreen: ERROR: ${loginScreenState.message}")
                 }
+                null -> {
+                    Log.e(TAG, "LoginScreen: LoginScreenState is null.")
+                }
             }
-
         }
 
     }
 
     @Composable
-    fun MyAppScreen(navController: NavController) {
+    fun MyAppScreen(navController: NavController = rememberNavController()) {
         val TAG = "My App Screen"
         val apiState = mainViewModel.apiState.observeAsState()
+        Log.e(TAG, "MyAppScreen: Drawing MyApp Screen.")
 
         Column {
             MyApp { week ->
@@ -399,6 +429,7 @@ class MainActivity : AppCompatActivity() {
 
         SideEffect {
             apiState.value?.let {
+                Log.e(TAG, "MyAppScreen: Checking state. $it")
                 checkApiState(it) { route ->
                     navController.navigate(route)
                 }
@@ -409,7 +440,6 @@ class MainActivity : AppCompatActivity() {
 
     @Composable
     fun QuestionListScreen(navController: NavController) {
-        mainViewModel.changeState()
         val questions by questionListViewModel.questions.observeAsState()
         val progress by questionListViewModel.currentProgress.observeAsState()
         val currentWeek by questionListViewModel.currentWeek.observeAsState()
@@ -448,7 +478,7 @@ class MainActivity : AppCompatActivity() {
 
     //Helper functions
     private fun checkApiState(
-        questionListState: QuestionApiState<List<Question>>,
+        questionListState: QuestionApiState<Any>,
         navigate: (String) -> Unit
     ) {
         with(questionListState) {
@@ -462,7 +492,7 @@ class MainActivity : AppCompatActivity() {
                     Log.e(CHECK_TAG, "STATE : ${this})")
                 }
                 else -> {
-                    Log.e(CHECK_TAG, "STATE ERROR: Unrecognized Api State.")
+                    Log.e(CHECK_TAG, "STATE ERROR: Unrecognized Api State. $this")
                 }
             }
         }

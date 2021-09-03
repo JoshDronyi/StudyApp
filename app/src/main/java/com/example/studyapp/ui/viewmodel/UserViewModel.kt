@@ -1,17 +1,21 @@
 package com.example.studyapp.ui.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.User
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.util.State.ScreenState.LoginScreenState
 import com.example.studyapp.util.State.UserApiState
+import com.example.studyapp.util.asUser
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,45 +27,38 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private val TAG = "USER_VIEW_MODEL"
 
 
-    private val _loginScreenState: MutableStateFlow<UserApiState<Any>> =
-        MutableStateFlow(UserApiState.Sleep())
+    private val _loginScreenState: MutableLiveData<UserApiState<Any>> = MutableLiveData()
 
-    val loginScreenState: StateFlow<UserApiState<Any>>
+    val loginScreenState: LiveData<UserApiState<Any>>
         get() = _loginScreenState
 
-    fun observeRepo() = viewModelScope.launch(Dispatchers.IO) {
-        Log.e(TAG, "observeRepo: observing current user from repo")
-        repo.currentUser.collect { newUser ->
-            Log.e(TAG, "logged in user returned: $newUser")
-            Log.e(TAG, "observeRepo: Setting state of loginScreenState.")
-            _loginScreenState.value = UserApiState.Success(newUser)
-        }
-    }
+    suspend fun signInWithEmail(email: String, password: String) = viewModelScope.launch {
+        _loginScreenState.value = UserApiState.Loading()
+        Log.e(TAG, "signUpWithEmail: Calling Repo with result. State is loading.")
 
-    fun signInWithEmail(email: String, password: String) = viewModelScope.launch(Dispatchers.IO) {
-        Log.e(TAG, "signUpWithEmail: Calling Repo with result")
         repo.signInWithEmail(email, password)
-            .onStart {
-                Log.e(TAG, "signInWithEmail: starting sign in. setting value to loading.")
-                _loginScreenState.tryEmit(UserApiState.Loading())
-            }
-            .onCompletion {
-                Log.e(TAG, "signInWithEmail: Complete: $newUser")
-                newUser?.let { user ->
-                    _loginScreenState.tryEmit(UserApiState.Success(user))
-                }
-            }
-            .collect { newUser ->
-                Log.e(TAG, "signInWithEmail: Got a new user in the viewModel -> $newUser")
-                newUser?.let { user ->
-                    _loginScreenState.tryEmit(UserApiState.Success(user))
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Exception: ${exception.localizedMessage}")
+                exception.printStackTrace()
+            }.addOnSuccessListener { result ->
+                Log.e(
+                    TAG,
+                    "signInWithEmail: SUCCESS!! Auth Result is $result, user is ${result.user}"
+                )
+                result.user?.let {
+                    Log.e(TAG, "signInWithEmail: user was ${it.asUser()}")
+                    _loginScreenState.value = UserApiState.Success(it.asUser())
                 }
             }
     }
 
 
     fun signUpWithEmail(email: String, password: String): Flow<User?> {
+
+
         Log.e(TAG, "signUpWithEmail: Calling Repo with result")
+
+
         return repo.createNewUserProfile(email, password)
     }
 }

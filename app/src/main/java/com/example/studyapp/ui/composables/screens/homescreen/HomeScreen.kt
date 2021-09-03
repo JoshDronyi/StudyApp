@@ -24,7 +24,6 @@ import com.example.studyapp.util.*
 @Composable
 fun MyApp(navigation: (String) -> Unit) {
     Surface(color = MaterialTheme.colors.background) {
-        val CORNER_RADIUS = 15
         Column(
             modifier = Modifier
                 .fillMaxSize(.999f),

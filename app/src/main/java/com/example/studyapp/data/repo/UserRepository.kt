@@ -3,12 +3,12 @@ package com.example.studyapp.data.repo
 import android.util.Log
 import com.example.studyapp.data.model.User
 import com.example.studyapp.util.asUser
+import com.google.android.gms.tasks.Task
+import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,30 +19,13 @@ class UserRepository @Inject constructor(
 ) : RepositoryInterface {
     private val TAG = "USER_REPO"
 
-    private val _currentUser: MutableStateFlow<User> = MutableStateFlow(User.newBlankInstance())
-    val currentUser: MutableStateFlow<User> get() = _currentUser
 
-
-    fun signInWithEmail(email: String, password: String) = flow<User?> {
+    suspend fun signInWithEmail(
+        email: String,
+        password: String
+    ): Task<AuthResult> {
         Log.e(TAG, "signInWithEmail: inside the flow. Calling auth.")
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnFailureListener { exception ->
-                Log.e(TAG, "Exception: ${exception.localizedMessage}")
-                exception.printStackTrace()
-            }
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    task.result?.let { authResult ->
-                        Log.e(TAG, "signInWithEmail: task result was not null. $authResult")
-                        authResult.user?.let { user ->
-                            Log.e(TAG, "signInWithEmail: successfully got firebase user. $user")
-                            _currentUser.value = user.asUser()
-                        }
-                    }
-                } else {
-                    Log.e(TAG, "Issue signing in user: ${task.exception?.printStackTrace()}")
-                }
-            }
+        return auth.signInWithEmailAndPassword(email, password)
     }
 
     fun createNewUserProfile(email: String, password: String): Flow<User> = flow {
@@ -61,7 +44,7 @@ class UserRepository @Inject constructor(
                     Log.e(TAG, "createNewUserProfile: Task Successful")
                     task.result?.let { result ->
                         result.user?.let {
-                            _currentUser.tryEmit(it.asUser())
+                            //_currentUser.tryEmit(it.asUser())
                         }
                     }
                 } else {

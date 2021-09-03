@@ -20,8 +20,8 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(private val repo: QuestionRepository) : ViewModel() {
 
     private val _apiState =
-        MutableLiveData<QuestionApiState<List<Question>>>(QuestionApiState.Sleep())
-    val apiState: LiveData<QuestionApiState<List<Question>>>
+        MutableLiveData<QuestionApiState<Any>>()
+    val apiState: LiveData<QuestionApiState<Any>>
         get() = _apiState
 
 
@@ -46,9 +46,5 @@ class MainViewModel @Inject constructor(private val repo: QuestionRepository) : 
                 _apiState.postValue(QuestionApiState.Success(dataFromTheInternet))
             }
         }
-    }
-
-    fun changeState() {
-        _apiState.postValue(QuestionApiState.Sleep())
     }
 }
