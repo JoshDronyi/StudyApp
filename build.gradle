@@ -9,6 +9,5 @@ buildscript {
         compose_version = '1.0.1'
         hilt_version = '2.37'
         bom_version='28.3.0'
-        room_version = "2.3.0"
     }
 }
