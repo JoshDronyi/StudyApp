@@ -65,8 +65,12 @@ dependencies {
 
 
     //Additional compose related dependencies
+<<<<<<< HEAD
     implementation "androidx.navigation:navigation-compose:2.4.0-alpha07" //NavHost
     implementation "androidx.constraintlayout:constraintlayout-compose:1.0.0-beta02" //Constraints
+=======
+    implementation "androidx.navigation:navigation-compose:2.4.0-alpha07"//NavHost
+>>>>>>> bd292c757145ba15ebfdb6f7cc186e0b20a4ddd7
     implementation "com.google.code.gson:gson:2.8.6" //Gson
 
     //Hilt
@@ -86,5 +90,10 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics-ktx' //Crashlytics
     implementation 'com.google.firebase:firebase-analytics-ktx' //Analytics
     implementation 'com.google.firebase:firebase-auth-ktx' //Auth
+
+    //Coil
+    implementation("io.coil-kt:coil-compose:1.3.1")
+
+
     //end region
 }
