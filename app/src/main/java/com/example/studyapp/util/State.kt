@@ -1,37 +1,35 @@
 package com.example.studyapp.util
 
 import com.example.studyapp.data.model.Question
-import com.example.studyapp.data.model.User
 
 sealed class State {
-    sealed class QuestionApiState<out T>() : State() {
-        data class Success(val questionList: List<Question>) : QuestionApiState<List<Question>>()
-        data class Error(val message: String) : QuestionApiState<String>()
-        class Loading : QuestionApiState<Nothing>()
-        class Sleep : QuestionApiState<Nothing>()
+
+    sealed class ApiState<out T>() : State() {
+        open class Success<out A>(val data: A) : ApiState<A>() {
+            class QuestionApiSuccess(val questionList: List<Question>) :
+                Success<List<Question>>(questionList)
+
+            class UserApiSuccess<out User>(private val user: User) : Success<User>(user)
+            class DefaultUserSuccess<out User>(private val user: User) : Success<User>(user)
+        }
+
+        data class Error(val data: StudyAppError) : ApiState<StudyAppError>()
+        object Loading : ApiState<Nothing>()
+        object Sleep : ApiState<Nothing>()
+
     }
 
-    sealed class UserApiState<out T>() : State() {
-        data class Success(val user: User) : UserApiState<User>()
-        data class Default(val user: User) : UserApiState<User>()
-        data class Error(val message: String) : UserApiState<String>()
-        class Loading : UserApiState<Nothing>()
-        class Sleep : UserApiState<Nothing>()
-    }
-
-    sealed class ScreenState<out T> : State() {
-        data class LoginScreenState<out T>(
-            var userLoginState: UserApiState<Any>
-        ) : ScreenState<T>()
+    sealed class ScreenState : State() {
+         class LoginScreenState() : ScreenState()
 
         object MainScreenState : State()
-        data class QuestionListScreenState<out T>(
+        data class QuestionListScreenState(
             val questionList: List<Question>
-        ) : ScreenState<T>()
+        ) : ScreenState()
 
-        data class QuestionScreenState<out T>(
+        data class QuestionScreenState(
             val currentQuestion: Question
-        ) : ScreenState<T>()
+        ) : ScreenState()
     }
 
 

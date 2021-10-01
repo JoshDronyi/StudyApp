@@ -17,6 +17,41 @@ fun formatWeekStringToInt(week: String): Int {
     return week.filter { it.isDigit() }.toInt()
 }
 
+/**
+ * Email is valid if :
+ * - it matches the regex
+ * - it contains no empty spaces
+ */
+fun String.validateEmail(): Boolean {
+    return this.apply {
+        this.trim()
+            .trimIndent()
+    }.matches(EMAIL_REGEX.toRegex())
+}
+
+/**
+ * Password is valid if:
+ * - it has at least  the minimun characters (6 characters)
+ * - it contains at least one number
+ */
+fun String.validatePassword(): Boolean = this.let { theString: String ->
+    Log.e("Utils", "validatePassword: theString: $theString")
+    return when {
+        theString.length < MIN_PW_CHARS -> {
+            Log.e("Utils", "validatePassword: Not enough characters")
+            false
+        }
+        theString.count {
+            it.isDigit()
+        } == 0 -> {
+            Log.e("Utils", "validatePassword: Count was wrong")
+            false // will be false after testing is done
+        }
+        else -> true
+    }
+}
+
+
 fun verifyText(
     context: Context,
     verificationOption: VerificationOptions,
