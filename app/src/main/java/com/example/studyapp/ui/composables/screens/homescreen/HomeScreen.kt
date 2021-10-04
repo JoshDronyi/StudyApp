@@ -1,5 +1,6 @@
 package com.example.studyapp.ui.composables.screens.homescreen
 
+import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.border
@@ -27,9 +28,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
+import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import com.example.studyapp.util.State.ApiState
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 //helpful variable. Should be raised.
 private const val CHECK_TAG = "CheckApiState function"
@@ -39,7 +41,7 @@ const val TAG = "HomeScreen"
 @Composable
 fun MyAppScreen(
     questionListViewModel: QuestionListViewModel = viewModel(),
-    navController: NavController = rememberNavController()
+    context: Context
 ) {
     val TAG = "My App Screen"
     val apiState by questionListViewModel.apiState.observeAsState()
@@ -48,7 +50,23 @@ fun MyAppScreen(
     Column {
         MyApp { week ->
             Log.e(TAG, "MyAppScreen: Changing current week to $week")
-            changeCurrentWeek(week, questionListViewModel, navController)
+            when (week) {
+                WK1, WK2, WK3, WK4, WK5, WK6 -> {
+                    Log.e(
+                        TAG,
+                        "changeCurrentWeek: Changing currentWeek in questionListViewModel. getting questions in MainView Model. for week $week"
+                    )
+                    questionListViewModel.currentWeek.value = week
+                    questionListViewModel.getQuestions(week)
+                }
+                else -> {
+                    Toast.makeText(
+                        context,
+                        "Please select questions from weeks 1-6",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 
@@ -61,11 +79,11 @@ fun MyAppScreen(
             checkApiState(it, questionListViewModel)
         }
     }
+
 }
 
-
 @Composable
-fun MyApp(navigation: (String) -> Unit) {
+fun MyApp(onWeekSelect: (weekNumber: String) -> Unit) {
     Surface(color = MaterialTheme.colors.background) {
         Column(
             modifier = Modifier
@@ -84,67 +102,50 @@ fun MyApp(navigation: (String) -> Unit) {
 
             Spacer(modifier = Modifier.height(80.dp))
 
-            Card(
-                elevation = 8.dp,
-                modifier = Modifier
-                    .fillMaxWidth(.9f),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Column(
-                    modifier = Modifier.heightIn(min = 350.dp, max = 600.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        WeekButton(
-                            weekNumber = WK1,
-                            modifier = Modifier
-                                .layoutId(WK1)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                        WeekButton(
-                            weekNumber = WK2,
-                            modifier = Modifier
-                                .layoutId(WK2)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        WeekButton(
-                            weekNumber = WK3,
-                            modifier = Modifier
-                                .layoutId(WK3)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                        WeekButton(
-                            weekNumber = WK4,
-                            modifier = Modifier
-                                .layoutId(WK4)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        WeekButton(
-                            weekNumber = WK5,
-                            modifier = Modifier
-                                .layoutId(WK5)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                        WeekButton(
-                            weekNumber = WK6,
-                            modifier = Modifier
-                                .layoutId(WK6)
-                        ) { weekNumber -> navigation.invoke(weekNumber) }
-                    }
-                }
+            WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
+                onWeekSelect.invoke(weekNumber)
             }
+
+        }
+    }
+}
+
+@Composable
+fun WeekSelectionCard(weeks: List<String>, onWeekSelect: (weekNumber: String) -> Unit) {
+    Card(
+        elevation = 8.dp,
+        modifier = Modifier
+            .fillMaxWidth(.9f),
+        shape = RoundedCornerShape(10.dp)
+    ) {
+        Column(
+            modifier = Modifier.heightIn(min = 350.dp, max = 600.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            for (week in weeks.size downTo 0 step 2) {
+                if (week >= 0 && (week + 1) < weeks.size)
+                    ButtonRow(weeks = listOf(weeks[week], weeks[week + 1])) { weekNo ->
+                        onWeekSelect.invoke(weekNo)
+                    }
+            }
+        }
+    }
+}
+
+@Composable
+fun ButtonRow(weeks: List<String>, onWeekSelect: (weekNumber: String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        weeks.forEach { week ->
+            WeekButton(
+                weekNumber = week,
+                modifier = Modifier
+                    .layoutId(week)
+            ) { weekNumber -> onWeekSelect.invoke(weekNumber) }
         }
     }
 }
@@ -164,20 +165,19 @@ fun WeekButton(
     modifier: Modifier,
     clickReaction: (String) -> Unit
 ) {
-
     Card(
+        shape = RoundedCornerShape(20),
+        elevation = 8.dp,
+        backgroundColor = MaterialTheme.colors.surface,
         modifier = modifier
-            .padding(16.dp)
             .width(120.dp)
             .height(60.dp)
+            .padding(16.dp)
             .border(2.dp, MaterialTheme.colors.primaryVariant, shape = RoundedCornerShape(20))
+            .shadow(8.dp)
             .clickable {
                 clickReaction.invoke(weekNumber)
             }
-            .shadow(8.dp),
-        shape = RoundedCornerShape(20),
-        elevation = 8.dp,
-        backgroundColor = MaterialTheme.colors.surface
     ) {
         Column(
             verticalArrangement = Arrangement.Center,
@@ -215,38 +215,4 @@ private fun checkApiState(
             }
         }
     }
-
 }
-
-
-@ExperimentalCoroutinesApi
-private fun changeCurrentWeek(
-    week: String,
-    questionListViewModel: QuestionListViewModel,
-    navController: NavController
-) {
-    when (week) {
-        WK1, WK2, WK3, WK4, WK5, WK6 -> {
-            Log.e(
-                TAG,
-                "changeCurrentWeek: Changing currentWeek in questionListViewModel. getting questions in MainView Model. for week $week"
-            )
-            questionListViewModel.currentWeek.value = week
-            questionListViewModel.getQuestions(week)
-        }
-        else -> {
-            Toast.makeText(
-                navController.context,
-                "Please select questions from weeks 1-6",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-}
-
-
-
-
-
-
-

@@ -30,6 +30,7 @@ import com.example.studyapp.ui.composables.sharedcomposables.DrawerImage
 import com.example.studyapp.ui.composables.sharedcomposables.DrawerItem
 import com.example.studyapp.ui.composables.sharedcomposables.StudyTopAppBar
 import com.example.studyapp.ui.theme.StudyAppTheme
+import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
@@ -57,11 +58,11 @@ class MainActivity : AppCompatActivity() {
     @ExperimentalCoilApi
     @Composable
     fun AppNavigator(
-        userViewModel: UserViewModel = viewModel()
+        userViewModel: UserViewModel = viewModel(),
+        questionListVM: QuestionListViewModel = viewModel()
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
-        val navController = rememberNavController()
         val currentUserState by userViewModel.userLoginState.observeAsState()
 
         Scaffold(
@@ -79,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                 text = this.localClassName,
                 destination = Navigator.currentScreen.value,
                 onMenuClick = {
-                    handleButtonOptions(it, state, navController, scope)
+                    handleButtonOptions(it, state, scope)
                 })
             Crossfade(targetState = Navigator.currentScreen) { screenState ->
                 when (screenState.value) {
@@ -87,7 +88,7 @@ class MainActivity : AppCompatActivity() {
                         LoginScreen(context = this, userViewModel)
                     }
                     is Screens.MainScreen -> {
-                        MyAppScreen()
+                        MyAppScreen(context = this, questionListViewModel = questionListVM)
                     }
                     is Screens.WeekQuestionsScreen -> {
                         QuestionListScreen()
@@ -135,12 +136,16 @@ class MainActivity : AppCompatActivity() {
 
             Divider()
             DrawerItem(text = DrawerOptions.HOME) {
-                closeDrawer(state, scope)
+                scope.launch {
+                    state.drawerState.close()
+                }
                 handleDrawerSelection(it, navController)
             }
             Divider()
             DrawerItem(text = DrawerOptions.SCOREBOARD) {
-                closeDrawer(state, scope)
+                scope.launch {
+                    state.drawerState.close()
+                }
                 handleDrawerSelection(it, navController)
             }
         }
@@ -177,12 +182,11 @@ class MainActivity : AppCompatActivity() {
     private fun handleButtonOptions(
         option: ButtonOptions,
         state: ScaffoldState,
-        navController: NavController,
         scope: CoroutineScope
     ) {
         when (option) {
             ButtonOptions.BACK -> {
-                navController.navigateUp()
+                Navigator.navigateUp()
             }
             ButtonOptions.MENU -> {
                 when (state.drawerState.currentValue) {

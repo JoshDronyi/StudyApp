@@ -55,21 +55,23 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
         Log.e(TAG, "getQuestions: Launched coroutine.")
         repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
-            Log.e(TAG, " getQuestions (inside repo lambda): Questions -> $dataFromTheInternet")
-            val questions = repository.getQuestionsByWeekOnDatabase(week).first()
-            Log.e(TAG, "getQuestions(inside repo lambda): 1Questions DB -> $questions")
-            if (questions.isNotEmpty()) {
-                Log.e(TAG, "getQuestions: Questions is not empty")
-                dataFromTheInternet.mapIndexed { index, internet ->
-                    internet.questionStatus = questions[index].questionStatus
+            Log.e(
+                TAG,
+                " getQuestions (inside repo lambda): Questions from Internet -> $dataFromTheInternet"
+            )
+            repository.getQuestionsByWeekOnDatabase(week).collect { questionList ->
+                Log.e(TAG, "getQuestions(inside repo lambda): Questions from DB -> $questionList")
+                if (questionList.isNotEmpty()) {
+                    Log.e(TAG, "getQuestions: Questions is not empty")
+                    dataFromTheInternet.mapIndexed { index, internet ->
+                        internet.questionStatus = questionList[index].questionStatus
+                    }
+                    repository.saveQuestionsInDatabase(dataFromTheInternet)
+                } else {
+                    Log.e(TAG, "getQuestions: questions was empty. $questionList")
                 }
-                repository.saveQuestionsInDatabase(dataFromTheInternet)
-            } else {
-                Log.e(TAG, "getQuestions: questions was empty. $questions")
             }
-            withContext(Dispatchers.Main) {
-                _apiState.value = ApiState.Success.QuestionApiSuccess(dataFromTheInternet)
-            }
+            _apiState.postValue(ApiState.Success.QuestionApiSuccess(dataFromTheInternet))
         }
     }
 

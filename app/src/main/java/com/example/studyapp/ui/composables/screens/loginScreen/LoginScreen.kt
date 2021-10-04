@@ -29,7 +29,6 @@ fun LoginScreen(
     userViewModel: UserViewModel
 ) {
     Log.e(TAG, "LoginScreen: drawing Login Screen")
-    //val userState by userViewModel.userLoginState.observeAsState()
     val isSignUp by userViewModel.isSignUp.observeAsState()
     val error by userViewModel.error.observeAsState()
 
