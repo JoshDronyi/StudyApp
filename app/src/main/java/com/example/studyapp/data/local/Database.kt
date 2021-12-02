@@ -7,7 +7,7 @@ import com.example.studyapp.data.model.StudentProgress
 
 @Database(
     entities = [Question::class, StudentProgress::class],
-    version = 2,
+    version = 5,
     exportSchema = true
 )
 abstract class Database : RoomDatabase() {

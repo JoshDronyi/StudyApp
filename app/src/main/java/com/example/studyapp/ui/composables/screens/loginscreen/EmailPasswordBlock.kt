@@ -1,4 +1,4 @@
-package com.example.studyapp.ui.composables.screens.loginScreen
+package com.example.studyapp.ui.composables.screens.loginscreen
 
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -31,7 +31,6 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
     ) {
 
         OTFBuilder(
-            value = emailValue,
             label = "Email",
             inValidInput = validEmail,
             modifier = Modifier.fillMaxWidth()
@@ -40,7 +39,6 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
         }
 
         OTFBuilder(
-            value = passwordValue,
             label = "Password",
             inValidInput = validPW,
             modifier = Modifier.fillMaxWidth()
@@ -56,19 +54,19 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
                     !emailValue.validateEmail() -> {
                         errorText = "Invalid email entered [$emailValue]"
                         validEmail = false
-                        onClick.invoke(VerificationOptions.Error, errorText, validEmail.toString())
+                        onClick.invoke(VerificationOptions.ERROR, errorText, validEmail.toString())
                     }
-                    passwordValue.validatePassword() -> {
+                    !passwordValue.validatePassword() -> {
                         errorText =
                             "Password must be at least 6 characters and contain at least 1 digit. " +
                                     "\n password:[$passwordValue]"
                         validPW = false
-                        onClick.invoke(VerificationOptions.Error, errorText, validPW.toString())
+                        onClick.invoke(VerificationOptions.ERROR, errorText, validPW.toString())
                     }
                     else -> {
                         if (validEmail && validPW) {
                             onClick.invoke(
-                                VerificationOptions.EmailPassword,
+                                VerificationOptions.EMAIL_PASSWORD,
                                 emailValue.trim(),
                                 passwordValue.trim()
                             )
@@ -90,7 +88,7 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
         Text(
             text = "Don't have an account? Sign up here!!",
             modifier = Modifier.clickable {
-                onClick.invoke(VerificationOptions.NewUser, emailValue, passwordValue)
+                onClick.invoke(VerificationOptions.NEW_USER, emailValue, passwordValue)
             },
             textAlign = TextAlign.Center
         )

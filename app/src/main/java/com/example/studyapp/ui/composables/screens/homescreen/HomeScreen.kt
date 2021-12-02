@@ -3,14 +3,14 @@ package com.example.studyapp.ui.composables.screens.homescreen
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -19,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.max
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -40,12 +42,12 @@ const val TAG = "HomeScreen"
 @ExperimentalCoroutinesApi
 @Composable
 fun MyAppScreen(
-    questionListViewModel: QuestionListViewModel = viewModel(),
-    context: Context
+    questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val TAG = "My App Screen"
     val apiState by questionListViewModel.apiState.observeAsState()
     Log.e(TAG, "MyAppScreen: Drawing MyApp Screen. State is $apiState")
+    val context = LocalContext.current
 
     Column {
         MyApp { week ->
@@ -54,7 +56,7 @@ fun MyAppScreen(
                 WK1, WK2, WK3, WK4, WK5, WK6 -> {
                     Log.e(
                         TAG,
-                        "changeCurrentWeek: Changing currentWeek in questionListViewModel. getting questions in MainView Model. for week $week"
+                        "changeCurrentWeek: Changing currentWeek in questionListViewModel. for week $week"
                     )
                     questionListViewModel.currentWeek.value = week
                     questionListViewModel.getQuestions(week)
@@ -105,7 +107,6 @@ fun MyApp(onWeekSelect: (weekNumber: String) -> Unit) {
             WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
                 onWeekSelect.invoke(weekNumber)
             }
-
         }
     }
 }
@@ -145,6 +146,7 @@ fun ButtonRow(weeks: List<String>, onWeekSelect: (weekNumber: String) -> Unit) {
                 weekNumber = week,
                 modifier = Modifier
                     .layoutId(week)
+                    .padding(16.dp)
             ) { weekNumber -> onWeekSelect.invoke(weekNumber) }
         }
     }
@@ -170,9 +172,8 @@ fun WeekButton(
         elevation = 8.dp,
         backgroundColor = MaterialTheme.colors.surface,
         modifier = modifier
-            .width(120.dp)
-            .height(60.dp)
-            .padding(16.dp)
+            .widthIn(min = 120.dp, max = 200.dp)
+            .heightIn(min = 60.dp, max = 120.dp)
             .border(2.dp, MaterialTheme.colors.primaryVariant, shape = RoundedCornerShape(20))
             .shadow(8.dp)
             .clickable {
@@ -184,7 +185,6 @@ fun WeekButton(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                modifier = modifier.width(IntrinsicSize.Max),
                 text = weekNumber,
                 textAlign = TextAlign.Center,
                 textDecoration = TextDecoration.Underline,
@@ -203,7 +203,7 @@ private fun checkApiState(
     with(questionListState) {
         when (this) {
             is ApiState.Success.QuestionApiSuccess -> {
-                Log.e(CHECK_TAG, "MyAppScreen: Success: $this")
+                Log.e(CHECK_TAG, "MyAppScreen: Success: $this, setting questionList")
                 questionListViewModel.setQuestionList(this.questionList)
                 Navigator.navigateTo(Screens.WeekQuestionsScreen)
             }

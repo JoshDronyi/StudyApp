@@ -1,7 +1,6 @@
 package com.example.studyapp.ui.composables.sharedcomposables
 
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,22 +9,21 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.twotone.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavDestination
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
 import com.example.studyapp.data.model.Question
@@ -119,49 +117,30 @@ fun MainTextCard(text: String, shape: Shape, modifier: Modifier) {
 }
 
 @Composable
-fun StudyTopAppBar(
-    text: String,
-    destination: Screens,
-    onMenuClick: (ButtonOptions) -> Unit
-) {
-    TopAppBar(
-        backgroundColor = MaterialTheme.colors.surface,
-        elevation = 0.dp,
-        modifier = Modifier.requiredHeight(60.dp)
+fun ProfileTextField(resourceId: Int, value: String, onSettingsChange: (value: String) -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Spacer(Modifier.width(10.dp))
-            when (destination.route) {
-                Screens.LoginScreen.route, Screens.MainScreen.route -> {
-                    Image(
-                        imageVector = Icons.TwoTone.Menu,
-                        contentDescription = "Toggle the drawer menu",
-                        Modifier.clickable { onMenuClick.invoke(ButtonOptions.MENU) },
-                        colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
-                    )
-                }
-                Screens.WeekQuestionsScreen.route, Screens.QuestionScreen.route -> {
-                    Image(
-                        imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Toggle the drawer menu",
-                        Modifier.clickable { onMenuClick.invoke(ButtonOptions.BACK) },
-                        colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
-                    )
+        Text(
+            text = stringResource(id = resourceId, value),
+            modifier = Modifier
+                .fillMaxWidth(.7f)
+                .padding(8.dp),
+            textAlign = TextAlign.Center,
+            fontStyle = FontStyle.Normal,
+            fontSize = 24.sp
+        )
+        Spacer(Modifier.width(10.dp))
 
+        Image(
+            imageVector = Icons.Filled.MoreVert, contentDescription = "Edit the resource",
+            modifier = Modifier
+                .fillMaxWidth(.2f)
+                .clickable {
+                    onSettingsChange.invoke(value)
                 }
-            }
-
-            Text(
-                text = text,
-                Modifier
-                    .fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-        }
+        )
     }
 }
 
@@ -169,36 +148,34 @@ fun StudyTopAppBar(
 @Preview(showBackground = true)
 @Composable
 fun Preview() {
-    var value by remember {
-        mutableStateOf("")
-    }
-    OTFBuilder(value = value, label = "Thingy", inValidInput = true) {
-        value = it
-    }
+    OTFBuilder(label = "Thingy", inValidInput = true) {}
 }
 
 @Composable
 fun OTFBuilder(
     modifier: Modifier = Modifier,
-    value: String = "",
     label: String,
     errorMessage: String = "",
-    inValidInput: Boolean,
+    inValidInput: Boolean?,
     onValueChange: (String) -> Unit,
 ) {
+    val textValue = remember { mutableStateOf("") }
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
     ) {
         OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
+            value = textValue.value,
+            onValueChange = { newString ->
+                textValue.value = newString
+                onValueChange.invoke(textValue.value)
+            },
             label = {
                 Text(text = label)
             })
-        if (inValidInput) {
-            val messageString = if (errorMessage == "" && !inValidInput) {
+        inValidInput?.let {
+            val messageString = if (errorMessage == "" && !it) {
                 ""
             } else {
                 errorMessage

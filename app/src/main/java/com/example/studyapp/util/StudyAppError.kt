@@ -16,5 +16,5 @@ data class StudyAppError(
 }
 
 enum class ErrorType {
-    NETWORK, LOGIN, TEST, DEFAULT, CANCELLED
+    NETWORK, LOGIN, TEST, DEFAULT, CANCELLED, VALIDATION
 }

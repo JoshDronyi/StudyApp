@@ -7,19 +7,20 @@ import androidx.room.PrimaryKey
 data class Question(
     @PrimaryKey
     var id: String = "",
-    val questionNumber: Int = 0,
-    val questionText: String = "",
-    val correctAnswer: String = "",
-    val wrongAnswer1: String = "",
-    val wrongAnswer2: String = "",
-    val wrongAnswer3: String = "",
-    var questionStatus: Int = 0,
-    val week: Int = 0
+    val questionNumber: String = "0",
+    var questionText: String = "",
+    var correctAnswer: String = "",
+    var answer1: String = "",
+    var answer2: String = "",
+    var answer3: String = "",
+    var topic: String = "",
+    var questionStatus: String = "0",
+    var week: String = "0"
 ) {
     fun mixAnswers() = listOf(
         correctAnswer,
-        wrongAnswer1,
-        wrongAnswer2,
-        wrongAnswer3
+        answer1,
+        answer2,
+        answer3
     ).shuffled()
 }

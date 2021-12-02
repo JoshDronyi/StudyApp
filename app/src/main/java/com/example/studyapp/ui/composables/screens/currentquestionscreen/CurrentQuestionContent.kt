@@ -1,5 +1,6 @@
 package com.example.studyapp.ui.composables.screens.currentquestionscreen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,24 +14,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
+import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
+
 
 @Composable
 fun QuestionScreen(
-    navController: NavController = rememberNavController(),
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
+    val tag = "QUESTIONSCREEN"
     val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
 
     currentQuestion?.let {
         CurrentQuestionContent(question = it) { text, question ->
-            if (!checkButtonAnswer(text, question, questionListViewModel)) {
-                navController.navigateUp()
+            if (checkButtonAnswer(text, question, questionListViewModel)) {
+                Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
+            }else{
+                Log.e(tag,"Question Screen: last question has been answered.")
+                questionListViewModel.stopQuestions()
+                Navigator.navigateUp()
             }
         }
     }
@@ -51,6 +56,7 @@ fun CurrentQuestionContent(
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
 
+        val cornerRadius = 15.dp
         val mixedAnswers = question.mixAnswers()
         Column(
             modifier = Modifier
@@ -71,7 +77,7 @@ fun CurrentQuestionContent(
                     fontSize = 40.sp
                 )
             }
-            val cornerRadius = 15
+
             MainTextCard(
                 modifier = Modifier
                     .heightIn(min = 200.dp)
@@ -158,11 +164,11 @@ private fun checkButtonAnswer(
 ): Boolean {
     if (text == question.correctAnswer) {
         questionListViewModel.updateQuestionStatus(question.apply {
-            questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal
+            questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal.toString()
         })
     } else {
         questionListViewModel.updateQuestionStatus(question.apply {
-            questionStatus = QuestionStatus.WRONG_ANSWER.ordinal
+            questionStatus = QuestionStatus.WRONG_ANSWER.ordinal.toString()
         })
     }
     return questionListViewModel.getNewQuestion()

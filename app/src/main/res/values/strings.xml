@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">StudyApp</string>
-    <string name="errorMessage">%1$s Error has occured!</string>
+    <string name="errorMessage">%1$s Error has occurred!</string>
+    <string name="profileName">Name: %1$s</string>
+    <string name="profileEmail">Email: %1$s</string>
+    <string name="profilePhoneNumber">Phone: %1$s</string>
+    <string name="settingsItem"> Adjust your %1$s</string>
 </resources>

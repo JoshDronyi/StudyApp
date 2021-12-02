@@ -8,44 +8,135 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.User
+import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
+import com.example.studyapp.data.remote.AuthDataSource
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.util.Navigator
-import com.example.studyapp.util.Screens
+import com.example.studyapp.ui.composables.screens.loginscreen.TAG
+import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
-import com.example.studyapp.util.State.ScreenState.LoginScreenState
-import com.example.studyapp.util.StudyAppError
-import com.example.studyapp.util.VerificationOptions
-import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.InternalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
+
+@InternalCoroutinesApi
+@ExperimentalCoroutinesApi
 @HiltViewModel
 class UserViewModel @Inject constructor(private val repo: UserRepository) : ViewModel() {
     //empty constructor necessary for ViewModel()
-    constructor() : this(UserRepository(FirebaseAuth.getInstance()))
+    constructor() : this(UserRepository(AuthDataSource(), FirebaseDatabaseDataSource()))
 
     private val tag = "USER_VIEW_MODEL"
 
 
+    //private mutable variables
     private val _userLoginState: MutableLiveData<ApiState<Any>> = MutableLiveData()
     private val _isSignUp: MutableLiveData<Boolean> = MutableLiveData(false)
     private val _error: MutableLiveData<StudyAppError> =
         MutableLiveData(StudyAppError.newBlankInstance())
+    private val _showDatePicker: MutableLiveData<Boolean> = MutableLiveData(false)
+    private val _validEmail = MutableLiveData(true)
+    private val _validPassword = MutableLiveData(true)
+    private val _validVerification = MutableLiveData(true)
 
+    //public immutable variables
     val userLoginState: LiveData<ApiState<Any>> get() = _userLoginState
     val isSignUp: LiveData<Boolean> get() = _isSignUp
     val error: LiveData<StudyAppError> get() = _error
+    val showDatePicker: LiveData<Boolean> get() = _showDatePicker
+    val currentUser: MutableLiveData<User> = MutableLiveData(User.newBlankInstance())
+    val validEmail: LiveData<Boolean> get() = _validEmail
+    val validPassword: LiveData<Boolean> get() = _validPassword
+    val validVerification: LiveData<Boolean> get() = _validVerification
 
-    /*private val _loginScreenState: MutableLiveData<LoginScreenState> =
-        MutableLiveData(LoginScreenState(ApiState.Sleep))
-    val loginState: LiveData<LoginScreenState>
-        get() = _loginScreenState*/
+
+    fun toggleItems(itemToToggle: Toggleable) {
+        when (itemToToggle) {
+            Toggleable.SIGNUP -> {
+                _isSignUp.value = !_isSignUp.value!!
+            }
+            Toggleable.DATEPICKER -> {
+                _showDatePicker.value = !_showDatePicker.value!!
+            }
+        }
+    }
+
+    @ExperimentalCoroutinesApi
+    @InternalCoroutinesApi
+    fun onSignUpAttempt(newUser: User, password: String, verifyPW: String, context: Context) {
+        when {
+            newUser.email?.validateEmail() != true -> {
+                _error.value?.let {
+                    with(it) {
+                        message = "Please enter a valid email"
+                        shouldShow = true
+                        errorType = ErrorType.VALIDATION
+                    }
+                    _validEmail.value = false
+                    Log.e(TAG, "onSignUpAttempt: email validation error: ${it.message}")
+                }
+            }
+            !password.validatePassword() -> {
+                _error.value?.let {
+                    with(it) {
+                        message =
+                            "Passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
+                        shouldShow = true
+                        errorType = ErrorType.VALIDATION
+                    }
+                    _validPassword.value = false
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                }
+            }
+            !verifyPW.validatePassword() -> {
+                _error.value?.let {
+                    with(it) {
+                        message =
+                            "Verified passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
+                        shouldShow = true
+                        errorType = ErrorType.VALIDATION
+                    }
+                    _validVerification.value = false
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                }
+            }
+            password != verifyPW -> {
+                _error.value?.let {
+                    with(it) {
+                        message = "Passwords do not match."
+                        shouldShow = true
+                        errorType = ErrorType.VALIDATION
+                    }
+                    _validVerification.value = false
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                }
+            }
+            else -> {
+                if (_validEmail.value == true &&
+                    _validPassword.value == true &&
+                    _validVerification.value == true
+                ) {
+                    Log.e(TAG, "SignUpBlock: email and password are valid.")
+                    newUser.email?.let {
+                        Log.e(TAG, "SignUpBlock: email was $it.")
+                        onLoginAttempt(
+                            VerificationOptions.NEW_USER,
+                            it, password, context, newUser
+                        )
+                    }
+                } else {
+                    Log.e(
+                        TAG, "SignUpBlock: at least 1 verification failure:\n" +
+                                "valid email: ${_validEmail.value}\n" +
+                                "valid password: ${_validPassword.value}\n" +
+                                "valid verification: ${_validVerification.value}"
+                    )
+                }
+            }
+        }
+    }
 
     @ExperimentalCoroutinesApi
     @InternalCoroutinesApi
@@ -59,14 +150,20 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         }
 
 
-    private fun signUpWithEmail(email: String, password: String): Flow<User?> {
+    @DelicateCoroutinesApi
+    private fun signUpWithEmail(user: User, password: String) {
         Log.e(tag, "signUpWithEmail: Calling Repo with result")
-        return repo.createNewUserProfile(email, password)
+        viewModelScope.launch(Dispatchers.IO) {
+            _userLoginState.postValue(ApiState.Loading)
+            repo.createNewUserProfile(user, password).collectLatest { state ->
+                handleUserState(state)
+            }
+        }
     }
 
     private fun handleUserState(userState: ApiState<Any?>) {
         when (userState) {
-            is ApiState.Loading, is ApiState.Sleep -> {
+            is ApiState.Loading -> {
                 Log.e(
                     tag,
                     "handleUserState: User changed but not valid yet. Loading or asleep: state= $userState."
@@ -77,9 +174,10 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                 if (!user.isDefault) {
                     Log.e(
                         tag,
-                        "handleUserState: Got a valid user object. Username: ${user.name} email: ${user.email}"
+                        "handleUserState: Got a valid user object. Username: ${user.firstName} email: ${user.email}"
                     )
                     if (Navigator.currentScreen.value != Screens.MainScreen) {
+                        currentUser.postValue(user)
                         Navigator.navigateTo(Screens.MainScreen)
                     }
                 } else {
@@ -93,7 +191,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                 }
 
             }
-            is ApiState.Success.DefaultUserSuccess -> {
+            is ApiState.Success.DefaultUserSuccess, is ApiState.Sleep -> {
                 Log.e(tag, "handleUserState: Default user found.")
             }
             else -> {
@@ -102,35 +200,32 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         }
     }
 
+    @DelicateCoroutinesApi
     @ExperimentalCoroutinesApi
     @InternalCoroutinesApi
     fun onLoginAttempt(
         verificationOption: VerificationOptions,
         email: String,
         password: String,
-        context: Context
-
+        context: Context,
+        user: User? = null
     ) {
         Log.e(
-            tag,
-            "exiting screen content. \n VerificationOption:$verificationOption \n Email:$email \n Password:$password"
+            tag, "exiting screen content. \n VerificationOption:$verificationOption \n " +
+                    "Email:$email \n Password:$password"
         )
 
         when (verificationOption) {
-            VerificationOptions.EmailPassword -> {
-                Log.e(
-                    tag,
-                    "onLoginAttempt: in Verification option email/password."
-                )
-                viewModelScope.launch {
-                    signInWithEmail(email, password)
+            VerificationOptions.EMAIL_PASSWORD -> {
+                Log.e(tag, "onLoginAttempt: in Verification option email/password.")
+                signInWithEmail(email, password)
+            }
+            VerificationOptions.NEW_USER -> {
+                user?.let {
+                    signUpWithEmail(it, password)
                 }
-
             }
-            VerificationOptions.NewUser -> {
-                signUpWithEmail(email, password)
-            }
-            VerificationOptions.Error -> {
+            VerificationOptions.ERROR -> {
                 Log.e(
                     tag,
                     "onLoginAttempt: got an error, Email slot :[$email], Password Slot:[$password]"
@@ -142,6 +237,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                     tag, "onLoginAttempt: Tying to go back to email/password from Sign Up. \n" +
                             "HANDLE CASE TO RETURN TO LOGINSCREEN WITH LOGIN OPTION INSTEAD OF SIGN IN OPTION"
                 )
+                toggleItems(Toggleable.SIGNUP)
             }
         }
     }
@@ -149,64 +245,4 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     fun clearLoginError() {
         _error.value = StudyAppError.newBlankInstance()
     }
-
-/*fun checkLoginState(
-    stateToCheck: ApiState<Any>,
-    context: Context
-) {
-    when (stateToCheck) {
-        is ApiState.Sleep -> {
-            Log.e(
-                tag,
-                "checkLoginState: Invoking Login Sleep. $stateToCheck"
-            )
-            Toast
-                .makeText(context, "Not now, State is sleeping.", Toast.LENGTH_SHORT)
-                .show()
-        }
-        is ApiState.Success.UserApiSuccess -> {
-            val user = stateToCheck.data as User
-            if (!user.isDefault) {
-                Log.e(
-                    tag,
-                    "checkLoginState: Invoking Login Success. $stateToCheck"
-                )
-                handleUserState(stateToCheck)
-                Toast.makeText(context, "New User secured ${user.uid}", Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
-        is ApiState.Success.DefaultUserSuccess -> {
-            Toast.makeText(context, " Got the default user back", Toast.LENGTH_SHORT).show()
-            Log.e(
-                tag,
-                "checkLoginState: Default user captured. Still not ready"
-            )
-        }
-        is ApiState.Loading -> {
-            Toast.makeText(context, "Resource is currently loading", Toast.LENGTH_SHORT)
-                .show()
-            Log.e(
-                tag,
-                "checkLoginState: Invoking Loading screen. $stateToCheck"
-            )
-        }
-        is ApiState.Error -> {
-            Toast.makeText(
-                context,
-                "OOps there was an error!!! ${stateToCheck.data.message}\n ERROR TYPE: ${stateToCheck.data.errorType}",
-                Toast.LENGTH_SHORT
-            ).show()
-            Log.e(
-                tag,
-                "checkLoginState: ERROR: ${stateToCheck.data.message}"
-            )
-        }
-        else -> {
-            Log.e(tag, "checkLoginState: Should never happen. Unspecified screen state.")
-        }
-    }
 }
-*/
-}
-
