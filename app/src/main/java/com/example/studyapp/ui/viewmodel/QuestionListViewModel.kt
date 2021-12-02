@@ -8,12 +8,16 @@ import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.QuestionRepository
-import com.example.studyapp.data.repo.RepositoryInterface
+import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 
+@ExperimentalCoroutinesApi
 @HiltViewModel
 class QuestionListViewModel @Inject constructor(private val repository: QuestionRepository) :
     ViewModel() {
@@ -33,6 +37,63 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     val currentWeek = MutableLiveData<String>()
 
+    private val _apiState =
+        MutableLiveData<ApiState<Any>>(ApiState.Sleep)
+    val apiState: LiveData<ApiState<Any>>
+        get() = _apiState
+
+
+    private val TAG = "QuestionListViewModel"
+
+
+    @ExperimentalCoroutinesApi
+    fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
+        Log.e(TAG, "getQuestions:  week was $week")
+        _apiState.postValue(ApiState.Loading)
+
+        Log.e(TAG, "getQuestions: Launched coroutine.")
+        repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
+            Log.e(
+                TAG,
+                " getQuestions (inside repo lambda): Questions from Internet -> $dataFromTheInternet"
+            )
+            when (dataFromTheInternet) {
+                is ApiState.Success.QuestionApiSuccess -> {
+                    //Save question to the database
+                    repository.getQuestionsByWeekOnDatabase(week).collect { questionList ->
+                        Log.e(
+                            TAG,
+                            "getQuestions(inside repo lambda): Questions from DB -> $questionList"
+                        )
+                        if (questionList.isNotEmpty()) {
+                            Log.e(TAG, "getQuestions: Questions from the database is not empty")
+
+                            val list: List<Question> =
+                                dataFromTheInternet.questionList.mapIndexed { index, internet ->
+                                    internet.questionStatus = questionList[index].questionStatus
+                                    internet
+                                }
+
+                            _apiState.postValue(ApiState.Success.QuestionApiSuccess(list))
+                        } else {
+                            Log.e(
+                                TAG,
+                                "getQuestions: questions from the database was empty.$questionList"
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
+                }
+            }
+            _apiState.postValue(dataFromTheInternet)
+        }
+    }
+
+    fun stopQuestions() {
+        _apiState.value = ApiState.Sleep
+    }
 
     fun getNewQuestion(): Boolean {
         return _questions.value?.let { questions ->
@@ -41,21 +102,22 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
     fun setQuestionList(questions: List<Question>) {
+        Log.e(TAG, "setQuestionList: Setting question list to $questions")
         _questions.value = questions
     }
 
 
     private fun shouldShowNextQuestion(questions: List<Question>): Boolean {
         currentQuestion.value?.let { currentQuestion ->
-            Log.e("Question Number", currentQuestion.questionNumber.toString())
+            Log.e("Question Number", currentQuestion.questionNumber)
             Log.e("Last Number", questions.lastIndex.toString())
 
             return shouldShowNextQuestion(
-                currentQuestion.questionNumber,
+                currentQuestion.questionNumber.toInt(),
                 questions.lastIndex
             ).also {
                 if (it) {
-                    _currentQuestion.postValue(questions[currentQuestion.questionNumber])
+                    _currentQuestion.postValue(questions[currentQuestion.questionNumber.toInt()])
                 }
             }
         }
@@ -77,5 +139,17 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
 
     fun setCurrentQuestion(question: Question) = _currentQuestion.postValue(question)
-
+    fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
+        Log.e(
+            TAG,
+            "addNewQuestion: adding new question in VM for week  $week. Question: $question "
+        )
+        repository.addNewQuestionToWeek(week, question).collect { theFlow ->
+            Log.e(
+                TAG,
+                "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theFlow) back."
+            )
+            _apiState.postValue(theFlow)
+        }
+    }
 }
