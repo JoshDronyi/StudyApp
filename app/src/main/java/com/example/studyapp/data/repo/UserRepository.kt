@@ -122,9 +122,12 @@ class UserRepository
                                                 }.addOnCompleteListener { task ->
                                                     //Check to see if new admin was successfully added.
                                                     if (task.isSuccessful) {
-                                                        trySend(ApiState.Success.UserApiSuccess(newUser))
-                                                    }
-                                                    else {
+                                                        trySend(
+                                                            ApiState.Success.UserApiSuccess(
+                                                                newUser
+                                                            )
+                                                        )
+                                                    } else {
                                                         trySend(
                                                             ApiState.Error(
                                                                 StudyAppError(
@@ -241,6 +244,8 @@ class UserRepository
         firebaseDatabase.addNewUserToRealtimeDatabase(user, ResultType.USER)
 
     private fun addUserToAdminList(user: User) = firebaseDatabase.addUserToAdminList(user)
+
+    fun updateUser(user: User) = firebaseDatabase.updateUser(user)
 
 
     override fun onDestroy() {

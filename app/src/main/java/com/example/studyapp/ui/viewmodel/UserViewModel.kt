@@ -242,6 +242,9 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         }
     }
 
+    private fun updateUser(user: User) = repo.updateUser(user)
+
+
     fun clearLoginError() {
         _error.value = StudyAppError.newBlankInstance()
     }

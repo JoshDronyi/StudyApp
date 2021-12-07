@@ -145,4 +145,8 @@ class FirebaseDatabaseDataSource {
         .child(user.uid)
         .setValue(true)
 
+    fun updateUser(user:User) = getReference("Users")
+        .child(user.uid)
+        .setValue(user)
+
 }
