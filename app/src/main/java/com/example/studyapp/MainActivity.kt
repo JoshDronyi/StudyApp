@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,8 +29,11 @@ import com.example.studyapp.util.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 
+@DelicateCoroutinesApi
+@ExperimentalAnimationApi
 @InternalCoroutinesApi
 @ExperimentalCoroutinesApi
+@ExperimentalCoilApi
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val userViewModel: UserViewModel by viewModels()
@@ -46,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @ExperimentalCoilApi
     @Composable
     fun AppNavigator(
         userViewModel: UserViewModel = viewModel(),
@@ -54,13 +55,13 @@ class MainActivity : AppCompatActivity() {
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
-        val currentUserState by userViewModel.userLoginState.observeAsState()
+        val loginScreenState = userViewModel.loginScreenState.observeAsState()
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
                 NavDrawer(
-                    screenState = currentUserState
+                    userState = loginScreenState.value?.apiState
                 ) { shouldClose ->
                     scope.launch {
                         if (shouldClose) {
@@ -84,12 +85,12 @@ class MainActivity : AppCompatActivity() {
                             when (state.drawerState.currentValue) {
                                 DrawerValue.Closed -> {
                                     scope.launch {
-                                        state.drawerState.close()
+                                        state.drawerState.open()
                                     }
                                 }
                                 DrawerValue.Open -> {
                                     scope.launch {
-                                        state.drawerState.open()
+                                        state.drawerState.close()
                                     }
                                 }
                             }
@@ -120,7 +121,7 @@ class MainActivity : AppCompatActivity() {
                     is Screens.NewQuestionScreen -> {
                         NewQuestionScreen { week, question ->
                             Log.e(tag, "AppNavigator: Question was $question for week $week")
-                            questionListVM.addNewQuestion(week,question)
+                            questionListVM.addNewQuestion(week, question)
                         }
                     }
                     else -> {

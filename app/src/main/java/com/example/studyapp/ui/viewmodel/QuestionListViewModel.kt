@@ -38,8 +38,8 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     val currentWeek = MutableLiveData<String>()
 
     private val _apiState =
-        MutableLiveData<ApiState<Any>>(ApiState.Sleep)
-    val apiState: LiveData<ApiState<Any>>
+        MutableLiveData<ApiState<*>>(ApiState.Sleep)
+    val apiState: LiveData<ApiState<*>>
         get() = _apiState
 
 

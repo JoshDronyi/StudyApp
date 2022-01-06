@@ -9,14 +9,14 @@ data class User(
     @ColumnInfo(name = "photo_url")
     var photoUrl: String? = null,
     @ColumnInfo(name = "first_name")
-    var firstName: String? = "Cat Morpheus",
+    var firstName: String = "Cat Morpheus",
     @ColumnInfo(name = "last_name")
-    var lastName: String? = "The Great.",
+    var lastName: String = "The Great.",
     var alias: String? = "Steven",
     var email: String? = "cats@rule.com",
     var role: String? = "student",
     @ColumnInfo(name = "phone_number")
-    val phoneNumber: String? = null,
+    var phoneNumber: String? = null,
     var isDefault: Boolean = true,
     @ColumnInfo(name = "batch_start_date")
     var batchStartDate: String = ""

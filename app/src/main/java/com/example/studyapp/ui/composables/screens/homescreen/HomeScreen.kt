@@ -196,7 +196,7 @@ fun WeekButton(
 }
 
 private fun checkApiState(
-    questionListState: ApiState<Any>,
+    questionListState: ApiState<*>,
     questionListViewModel: QuestionListViewModel
 ) {
     Log.e(CHECK_TAG, "checkApiState: Checking the state $questionListState")

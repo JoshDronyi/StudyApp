@@ -33,22 +33,26 @@ class UserRepository
     fun signInWithEmail(
         email: String,
         password: String
-    ) = callbackFlow {
+    ) = callbackFlow<ApiState<*>> {
         Log.e(tag, "signInWithEmail: inside the flow. Calling auth.")
         send(ApiState.Loading)
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 with(task) {
                     if (isSuccessful) {
-                        result.user?.let {
+                        result.user?.let { firebaseUser ->
+                            val user = firebaseUser.asUser()
                             Log.e(
                                 tag,
-                                "signInWithEmail: SUCCESS!! Auth Result is back and successful, user is $it"
+                                "signInWithEmail: SUCCESS!! Auth Result is back and successful, user is $user"
                             )
-                            //Return this next variable somehow.
-                            trySend(
-                                ApiState.Success.UserApiSuccess(it.asUser())
-                            )
+                            CoroutineScope(Dispatchers.IO).launch {
+                                getUserDetailsFromNetwork(user).collect {
+                                    //Return this next variable somehow.
+                                    Log.e(tag, "signInWithEmail: it was $it")
+                                    trySend(it)
+                                }
+                            }
                         }
                     } else {
                         with(exception) {
@@ -75,7 +79,7 @@ class UserRepository
     }
 
     @DelicateCoroutinesApi
-    fun createNewUserProfile(newUser: User, password: String) = callbackFlow {
+    fun createNewUserProfile(newUser: User, password: String) = callbackFlow<ApiState<*>> {
         Log.e(tag, "createNewUserProfile: Going with the flow")
         send(ApiState.Loading)
 
@@ -172,7 +176,7 @@ class UserRepository
         }
     }
 
-    private fun handleCompletedTask(task: Task<AuthResult>): ApiState<Any> {
+    private fun handleCompletedTask(task: Task<AuthResult>): ApiState<*> {
         return if (task.isSuccessful) {
             Log.e(
                 tag,
@@ -240,12 +244,15 @@ class UserRepository
     }
 
     @ExperimentalCoroutinesApi
-    fun addUserDetailsToRealtimeDB(user: User): Flow<ApiState<Any>> =
+    fun addUserDetailsToRealtimeDB(user: User): Flow<ApiState<*>> =
         firebaseDatabase.addNewUserToRealtimeDatabase(user, ResultType.USER)
 
     private fun addUserToAdminList(user: User) = firebaseDatabase.addUserToAdminList(user)
 
     fun updateUser(user: User) = firebaseDatabase.updateUser(user)
+
+    private fun getUserDetailsFromNetwork(user: User) =
+        firebaseDatabase.getUserDetailsFromNetwork(user)
 
 
     override fun onDestroy() {

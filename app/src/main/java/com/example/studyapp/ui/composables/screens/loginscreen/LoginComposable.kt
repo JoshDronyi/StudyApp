@@ -1,10 +1,10 @@
 package com.example.studyapp.ui.composables.screens.loginscreen
 
 import android.util.Log
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,11 +22,14 @@ import com.example.studyapp.util.ErrorType
 import com.example.studyapp.util.StudyAppError
 import com.example.studyapp.util.Toggleable
 import com.example.studyapp.util.VerificationOptions
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 
 const val TAG = "LoginScreen"
 
+@DelicateCoroutinesApi
+@ExperimentalAnimationApi
 @ExperimentalCoroutinesApi
 @InternalCoroutinesApi
 @Composable
@@ -34,20 +37,18 @@ fun LoginScreen(
     userViewModel: UserViewModel = viewModel()
 ) {
     Log.e(TAG, "LoginScreen: drawing Login Screen")
-    val isSignUp = userViewModel.isSignUp.observeAsState()
-    val error by userViewModel.error.observeAsState()
-    val showPicker = userViewModel.showDatePicker.observeAsState("false")
+    val loginState = userViewModel.loginScreenState.observeAsState()
     val context = LocalContext.current
 
     LoginScreenContent(
-        isSignUp = isSignUp.value ?: false,
-        error = error,
-        showPicker = showPicker.value == true,
+        isSignUp = loginState.value?.isSignUp == true,
+        error = loginState.value?.error,
+        showPicker = loginState.value?.showDatePicker == true,
         onErrorClear = userViewModel::clearLoginError
     ) { vOptions, email, password ->
-        Log.e(TAG, "LoginScreen: isSignUp is ${isSignUp.value}")
-        if (vOptions == VerificationOptions.NEW_USER && isSignUp.value != true) {
-            Log.e(TAG, "LoginScreen: Toggling sign up value from -> ${isSignUp.value}")
+        Log.e(TAG, "LoginScreen: isSignUp is ${loginState.value?.isSignUp}")
+        if (vOptions == VerificationOptions.NEW_USER && loginState.value?.isSignUp != true) {
+            Log.e(TAG, "LoginScreen: Toggling sign up value from -> ${loginState.value?.isSignUp}")
             userViewModel.toggleItems(Toggleable.SIGNUP)
         } else {
             Log.e(TAG, "LoginScreen: Attempting login")
@@ -57,6 +58,8 @@ fun LoginScreen(
     }
 }
 
+@DelicateCoroutinesApi
+@ExperimentalAnimationApi
 @ExperimentalCoroutinesApi
 @InternalCoroutinesApi
 @Composable
@@ -76,20 +79,21 @@ fun LoginScreenContent(
             .fillMaxSize()
             .padding(8.dp)
     ) {
-        MainTextCard(
-            text = "Android Study App",
-            shape = RoundedCornerShape(20.dp),
-            modifier = Modifier
-                .fillMaxWidth(.7f)
-                .heightIn(min = 100.dp, max = 200.dp)
-        )
-
         if (isSignUp) {
             SignUpBlock(
                 inValidInput = false,
                 showPicker
             )
+
         } else {
+            MainTextCard(
+                text = "Android Study App",
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth(.7f)
+                    .heightIn(min = 100.dp, max = 200.dp)
+            )
+
             EmailPasswordBlock { vOption, email, password ->
                 onLoginAttempt(vOption, email, password)
             }
@@ -144,6 +148,7 @@ fun LoginScreenContent(
 }
 
 
+@ExperimentalAnimationApi
 @ExperimentalCoroutinesApi
 @InternalCoroutinesApi
 @Composable

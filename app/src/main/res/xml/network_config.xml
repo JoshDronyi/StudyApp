@@ -3,8 +3,10 @@
     <domain-config>
         <domain includeSubdomains="true">googleapis.com</domain>
         <domain includeSubdomains="true">google.com</domain>
+        <domain includeSubdomains="true">gstatic.com</domain>
         <trust-anchors>
             <certificates src="user" />
+            <certificates src="system" />
         </trust-anchors>
     </domain-config>
 </network-security-config>

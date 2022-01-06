@@ -1,16 +1,17 @@
 package com.example.studyapp.util
 
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.User
 
 sealed class State {
 
     sealed class ApiState<out T>() : State() {
         open class Success<out A>(val data: A) : ApiState<A>() {
-            class QuestionApiSuccess(val questionList: List<Question>) :
+            data class QuestionApiSuccess(val questionList: List<Question>) :
                 Success<List<Question>>(questionList)
 
-            class UserApiSuccess<out User>(private val user: User) : Success<User>(user)
-            class DefaultUserSuccess<out User>(private val user: User) : Success<User>(user)
+            data class UserApiSuccess<out User>(private val user: User) : Success<User>(user)
+            data class DefaultUserSuccess<out User>(private val user: User) : Success<User>(user)
         }
 
         data class Error(val data: StudyAppError) : ApiState<StudyAppError>()
@@ -20,9 +21,16 @@ sealed class State {
     }
 
     sealed class ScreenState : State() {
-         class LoginScreenState() : ScreenState()
+        data class LoginScreenState(
+            var loginOption: VerificationOptions = VerificationOptions.EMAIL_PASSWORD,
+            var isSignUp: Boolean = false,
+            var showDatePicker: Boolean = false,
+            var error: StudyAppError? = null,
+            var apiState: ApiState<*> = ApiState.Sleep
+        ) : ScreenState()
 
-        object MainScreenState : State()
+        data class HomeScreenState(val currentUser: User) : State()
+
         data class QuestionListScreenState(
             val questionList: List<Question>
         ) : ScreenState()

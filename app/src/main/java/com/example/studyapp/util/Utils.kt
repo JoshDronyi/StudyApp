@@ -176,6 +176,9 @@ fun returnSnapShotAsUser(snapshot: DataSnapshot): User {
         snapshot.children.map {
             Log.e(TAG, "returnSnapShotAsUser: KEY WAS ${it.key}, VALUE WAS ${it.value}")
             when (it.key?.lowercase()) {
+                UserDTOAttributes.ID.value -> {
+                    this.uid = it.value.toString()
+                }
                 UserDTOAttributes.First.value -> {
                     this.firstName = it.value.toString()
                 }
@@ -194,10 +197,17 @@ fun returnSnapShotAsUser(snapshot: DataSnapshot): User {
                 UserDTOAttributes.BatchStartDate.value -> {
                     this.batchStartDate = it.value.toString()
                 }
+                UserDTOAttributes.Email.value -> {
+                    this.email = it.value.toString()
+                }
+                UserDTOAttributes.Phone.value -> {
+                    this.phoneNumber = it.value.toString()
+                }
             }
         }
     }
-    return user
+    Log.e(TAG, "returnSnapShotAsUser: user after refactor was $user")
+    return user.apply { isDefault = false }
 }
 
 fun returnErrorAsStudyAppError(error: DatabaseError): StudyAppError {

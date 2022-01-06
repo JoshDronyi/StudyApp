@@ -19,9 +19,14 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.annotation.ExperimentalCoilApi
@@ -125,7 +130,7 @@ fun ProfileTextField(resourceId: Int, value: String, onSettingsChange: (value: S
         Text(
             text = stringResource(id = resourceId, value),
             modifier = Modifier
-                .fillMaxWidth(.7f)
+                .fillMaxWidth(.9f)
                 .padding(8.dp),
             textAlign = TextAlign.Center,
             fontStyle = FontStyle.Normal,
@@ -136,12 +141,25 @@ fun ProfileTextField(resourceId: Int, value: String, onSettingsChange: (value: S
         Image(
             imageVector = Icons.Filled.MoreVert, contentDescription = "Edit the resource",
             modifier = Modifier
-                .fillMaxWidth(.2f)
+                .fillMaxWidth(.1f)
                 .clickable {
                     onSettingsChange.invoke(value)
                 }
         )
     }
+}
+
+@Composable
+fun Title(text: String = "") {
+    Text(
+        text = text,
+        color = MaterialTheme.colors.onSurface,
+        style = TextStyle.Default.copy(
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            textDecoration = TextDecoration.Underline
+        )
+    )
 }
 
 
@@ -155,11 +173,12 @@ fun Preview() {
 fun OTFBuilder(
     modifier: Modifier = Modifier,
     label: String,
+    value: String = "",
     errorMessage: String = "",
     inValidInput: Boolean?,
     onValueChange: (String) -> Unit,
 ) {
-    val textValue = remember { mutableStateOf("") }
+    val textValue = remember { mutableStateOf(value) }
     Column(
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally,

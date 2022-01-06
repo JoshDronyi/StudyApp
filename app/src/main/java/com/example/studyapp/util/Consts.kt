@@ -50,10 +50,13 @@ enum class QuestionDTOAttributes(var value: String) {
 }
 
 enum class UserDTOAttributes(var value: String) {
+    ID("uid"),
     Alias("alias"),
-    First("first"),
-    Last("last"),
+    First("firstName"),
+    Last("lastName"),
     Role("role"),
-    ProfilePic("profile_pic"),
-    BatchStartDate("batch_start_date")
+    Email("email"),
+    Phone("phoneNumber"),
+    ProfilePic("photoUrl"),
+    BatchStartDate("batchStartDate")
 }

@@ -8,15 +8,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.User
-import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.remote.AuthDataSource
+import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.repo.UserRepository
 import com.example.studyapp.ui.composables.screens.loginscreen.TAG
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
+import com.example.studyapp.util.State.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
@@ -30,35 +30,41 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
     private val tag = "USER_VIEW_MODEL"
 
+    //Login Screen
+    private val _loginScreenState: MutableLiveData<ScreenState.LoginScreenState> =
+        MutableLiveData(ScreenState.LoginScreenState())
+    val loginScreenState: LiveData<ScreenState.LoginScreenState> get() = _loginScreenState
 
-    //private mutable variables
-    private val _userLoginState: MutableLiveData<ApiState<Any>> = MutableLiveData()
-    private val _isSignUp: MutableLiveData<Boolean> = MutableLiveData(false)
-    private val _error: MutableLiveData<StudyAppError> =
-        MutableLiveData(StudyAppError.newBlankInstance())
-    private val _showDatePicker: MutableLiveData<Boolean> = MutableLiveData(false)
+
+    //public immutable variables
+    val currentUser: MutableLiveData<User> = MutableLiveData(User.newBlankInstance())
+
+
+    //Validation Variables
     private val _validEmail = MutableLiveData(true)
     private val _validPassword = MutableLiveData(true)
     private val _validVerification = MutableLiveData(true)
-
-    //public immutable variables
-    val userLoginState: LiveData<ApiState<Any>> get() = _userLoginState
-    val isSignUp: LiveData<Boolean> get() = _isSignUp
-    val error: LiveData<StudyAppError> get() = _error
-    val showDatePicker: LiveData<Boolean> get() = _showDatePicker
-    val currentUser: MutableLiveData<User> = MutableLiveData(User.newBlankInstance())
     val validEmail: LiveData<Boolean> get() = _validEmail
     val validPassword: LiveData<Boolean> get() = _validPassword
     val validVerification: LiveData<Boolean> get() = _validVerification
 
 
     fun toggleItems(itemToToggle: Toggleable) {
-        when (itemToToggle) {
-            Toggleable.SIGNUP -> {
-                _isSignUp.value = !_isSignUp.value!!
-            }
-            Toggleable.DATEPICKER -> {
-                _showDatePicker.value = !_showDatePicker.value!!
+        with(_loginScreenState) {
+            /**
+             * isSignUp and showDatePicker both have default values of false
+             * on instantiation and are non-Nullable attributes so they
+             * will always have a value
+             */
+            when (itemToToggle) {
+                Toggleable.SIGNUP -> {
+                    this.value =
+                        this.value?.copy(isSignUp = !this.value?.isSignUp!!) //Default value set to false
+                }
+                Toggleable.DATEPICKER -> {
+                    this.value =
+                        this.value?.copy(showDatePicker = (this.value?.showDatePicker!!)) //Default value set to false
+                }
             }
         }
     }
@@ -68,49 +74,49 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     fun onSignUpAttempt(newUser: User, password: String, verifyPW: String, context: Context) {
         when {
             newUser.email?.validateEmail() != true -> {
-                _error.value?.let {
-                    with(it) {
+                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
+                    with(this) {
                         message = "Please enter a valid email"
                         shouldShow = true
                         errorType = ErrorType.VALIDATION
                     }
+                    Log.e(TAG, "onSignUpAttempt: email validation error: ${this.message}")
                     _validEmail.value = false
-                    Log.e(TAG, "onSignUpAttempt: email validation error: ${it.message}")
                 }
             }
             !password.validatePassword() -> {
-                _error.value?.let {
-                    with(it) {
+                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
+                    with(this) {
                         message =
-                            "Passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
+                            "Passwords must have at least ${MIN_PW_CHARS} characters with at least one (1) digit."
                         shouldShow = true
                         errorType = ErrorType.VALIDATION
                     }
                     _validPassword.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
                 }
             }
             !verifyPW.validatePassword() -> {
-                _error.value?.let {
-                    with(it) {
+                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
+                    with(this) {
                         message =
                             "Verified passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
                         shouldShow = true
                         errorType = ErrorType.VALIDATION
                     }
                     _validVerification.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
                 }
             }
             password != verifyPW -> {
-                _error.value?.let {
-                    with(it) {
+                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
+                    with(this) {
                         message = "Passwords do not match."
                         shouldShow = true
                         errorType = ErrorType.VALIDATION
                     }
                     _validVerification.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${it.message}")
+                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
                 }
             }
             else -> {
@@ -143,8 +149,8 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private fun signInWithEmail(email: String, password: String) =
         viewModelScope.launch(Dispatchers.IO) {
             Log.e(tag, "signInWithEmail: Calling Repo with result. State is loading.")
-            _userLoginState.postValue(ApiState.Loading)
-            repo.signInWithEmail(email, password).collect { state ->
+            _loginScreenState.value?.apiState = ApiState.Loading
+            repo.signInWithEmail(email, password).collectLatest { state ->
                 handleUserState(state)
             }
         }
@@ -154,14 +160,14 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private fun signUpWithEmail(user: User, password: String) {
         Log.e(tag, "signUpWithEmail: Calling Repo with result")
         viewModelScope.launch(Dispatchers.IO) {
-            _userLoginState.postValue(ApiState.Loading)
+            _loginScreenState.value?.apiState = ApiState.Loading
             repo.createNewUserProfile(user, password).collectLatest { state ->
                 handleUserState(state)
             }
         }
     }
 
-    private fun handleUserState(userState: ApiState<Any?>) {
+    private fun handleUserState(userState: ApiState<*>) {
         when (userState) {
             is ApiState.Loading -> {
                 Log.e(
@@ -171,13 +177,14 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
             }
             is ApiState.Success.UserApiSuccess -> {
                 val user = userState.data as User
+                Log.e(TAG, "handleUserState: user was $user")
                 if (!user.isDefault) {
                     Log.e(
                         tag,
                         "handleUserState: Got a valid user object. Username: ${user.firstName} email: ${user.email}"
                     )
+                    _loginScreenState.value?.apiState = ApiState.Success.UserApiSuccess(user)
                     if (Navigator.currentScreen.value != Screens.MainScreen) {
-                        currentUser.postValue(user)
                         Navigator.navigateTo(Screens.MainScreen)
                     }
                 } else {
@@ -187,7 +194,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
             is ApiState.Error -> {
                 with(userState.data) {
                     Log.e(tag, "handleUserState: Error from studyapp: $this")
-                    _error.postValue(this)
+                    _loginScreenState.value?.error = this
                 }
 
             }
@@ -246,6 +253,6 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
 
     fun clearLoginError() {
-        _error.value = StudyAppError.newBlankInstance()
+        _loginScreenState.value?.error = StudyAppError.newBlankInstance()
     }
 }
