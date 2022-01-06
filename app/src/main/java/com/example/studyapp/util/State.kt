@@ -29,7 +29,7 @@ sealed class State {
             var apiState: ApiState<*> = ApiState.Sleep
         ) : ScreenState()
 
-        data class HomeScreenState(val currentUser: User) : State()
+        data class HomeScreenState(val currentUser: User = User.newBlankInstance()) : State()
 
         data class QuestionListScreenState(
             val questionList: List<Question>

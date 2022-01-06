@@ -1,7 +1,6 @@
 package com.example.studyapp.ui.composables.screens.settingscreens
 
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,30 +36,31 @@ const val TAG = "Profile_Screen"
 @ExperimentalCoilApi
 @Composable
 fun ProfileScreen(userViewModel: UserViewModel = viewModel()) {
-    val currentUser = userViewModel.currentUser.observeAsState(User.newBlankInstance())
+    val homeScreenState = userViewModel.homeScreenState.observeAsState()
+    val currentUser = homeScreenState.value?.currentUser!!
 
-    ProfileScreenContent(user = currentUser.value) { setting, settingValue ->
+    ProfileScreenContent(user = currentUser) { setting, settingValue ->
         when (setting) {
             ProfileSettings.FirstName -> {
-                currentUser.value.firstName = settingValue
+                currentUser.firstName = settingValue
             }
             ProfileSettings.LastName -> {
-                currentUser.value.lastName = settingValue
+                currentUser.lastName = settingValue
             }
             ProfileSettings.Email -> {
-                currentUser.value.email = settingValue
+                currentUser.email = settingValue
             }
             ProfileSettings.PhoneNumber -> {
-                currentUser.value.phoneNumber = settingValue
+                currentUser.phoneNumber = settingValue
             }
             ProfileSettings.Role -> {
-                currentUser.value.role = settingValue
+                currentUser.role = settingValue
             }
             ProfileSettings.BatchStartDate -> {
-                currentUser.value.batchStartDate = settingValue
+                currentUser.batchStartDate = settingValue
             }
             ProfileSettings.PhotoUrl -> {
-                currentUser.value.photoUrl = settingValue
+                currentUser.photoUrl = settingValue
             }
         }
         Log.e(

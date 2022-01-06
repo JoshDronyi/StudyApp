@@ -35,10 +35,8 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         MutableLiveData(ScreenState.LoginScreenState())
     val loginScreenState: LiveData<ScreenState.LoginScreenState> get() = _loginScreenState
 
-
-    //public immutable variables
-    val currentUser: MutableLiveData<User> = MutableLiveData(User.newBlankInstance())
-
+    private val _homeScreenState: MutableLiveData<ScreenState.HomeScreenState> = MutableLiveData()
+    val homeScreenState:LiveData<ScreenState.HomeScreenState> get() = _homeScreenState
 
     //Validation Variables
     private val _validEmail = MutableLiveData(true)
