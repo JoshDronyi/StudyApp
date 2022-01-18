@@ -61,12 +61,12 @@ fun String.validatePassword(): Boolean = this.let { theString: String ->
 
 fun verifyText(
     context: Context,
-    verificationOption: VerificationOptions,
+    verificationOption: SignInOptions,
     email: String,
     password: String
 ): Boolean {
     return when (verificationOption) {
-        VerificationOptions.EMAIL_PASSWORD -> {
+        SignInOptions.EMAIL_PASSWORD -> {
             Toast.makeText(
                 context,
                 "Email/Password chosen \nEmail:$email\nPassword:$password",

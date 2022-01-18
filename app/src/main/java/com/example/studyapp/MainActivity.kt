@@ -55,13 +55,13 @@ class MainActivity : AppCompatActivity() {
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
-        val homeScreenState = userViewModel.homeScreenState.observeAsState()
+        val loginScreenState = userViewModel.loginScreenState.observeAsState()
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
                 NavDrawer(
-                    user = homeScreenState.value?.currentUser
+                    user = loginScreenState.value?.currentUser
                 ) { shouldClose ->
                     scope.launch {
                         if (shouldClose) {

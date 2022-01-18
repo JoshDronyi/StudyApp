@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
 
+@DelicateCoroutinesApi
 @InternalCoroutinesApi
 @ExperimentalCoroutinesApi
 @HiltViewModel
@@ -35,9 +36,6 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         MutableLiveData(ScreenState.LoginScreenState())
     val loginScreenState: LiveData<ScreenState.LoginScreenState> get() = _loginScreenState
 
-    private val _homeScreenState: MutableLiveData<ScreenState.HomeScreenState> = MutableLiveData()
-    val homeScreenState:LiveData<ScreenState.HomeScreenState> get() = _homeScreenState
-
     //Validation Variables
     private val _validEmail = MutableLiveData(true)
     private val _validPassword = MutableLiveData(true)
@@ -47,7 +45,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     val validVerification: LiveData<Boolean> get() = _validVerification
 
 
-    fun toggleItems(itemToToggle: Toggleable) {
+    fun toggleItems(itemToToggle: Toggleable, verification: VerificationOptions?) {
         with(_loginScreenState) {
             /**
              * isSignUp and showDatePicker both have default values of false
@@ -55,13 +53,18 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
              * will always have a value
              */
             when (itemToToggle) {
-                Toggleable.SIGNUP -> {
-                    this.value =
-                        this.value?.copy(isSignUp = !this.value?.isSignUp!!) //Default value set to false
+                Toggleable.VERIFICATION -> {
+                    verification?.let {
+                        this.value =
+                            this.value?.copy(
+                                signInOption = this.value?.signInOption!!,
+                                loginOption = it
+                            ) //Default value set to false
+                    }
                 }
                 Toggleable.DATEPICKER -> {
                     this.value =
-                        this.value?.copy(showDatePicker = (this.value?.showDatePicker!!)) //Default value set to false
+                        this.value?.copy(showDatePicker = (!this.value?.showDatePicker!!)) //Default value set to false
                 }
             }
         }
@@ -72,50 +75,30 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     fun onSignUpAttempt(newUser: User, password: String, verifyPW: String, context: Context) {
         when {
             newUser.email?.validateEmail() != true -> {
-                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
-                    with(this) {
-                        message = "Please enter a valid email"
-                        shouldShow = true
-                        errorType = ErrorType.VALIDATION
-                    }
-                    Log.e(TAG, "onSignUpAttempt: email validation error: ${this.message}")
-                    _validEmail.value = false
-                }
+                showValidationError(
+                    message = "Please enter a valid email"
+                )
+                _validEmail.value = false
             }
             !password.validatePassword() -> {
-                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
-                    with(this) {
-                        message =
-                            "Passwords must have at least ${MIN_PW_CHARS} characters with at least one (1) digit."
-                        shouldShow = true
-                        errorType = ErrorType.VALIDATION
-                    }
-                    _validPassword.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
-                }
+                showValidationError(
+                    message =
+                    "Passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
+                )
+                _validPassword.value = false
             }
             !verifyPW.validatePassword() -> {
-                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
-                    with(this) {
-                        message =
-                            "Verified passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
-                        shouldShow = true
-                        errorType = ErrorType.VALIDATION
-                    }
-                    _validVerification.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
-                }
+                showValidationError(
+                    message =
+                    "Verified passwords must have at least $MIN_PW_CHARS characters with at least one (1) digit."
+                )
+                _validVerification.value = false
             }
             password != verifyPW -> {
-                _loginScreenState.value?.error = StudyAppError.newBlankInstance().apply {
-                    with(this) {
-                        message = "Passwords do not match."
-                        shouldShow = true
-                        errorType = ErrorType.VALIDATION
-                    }
-                    _validVerification.value = false
-                    Log.e(TAG, "onSignUpAttempt: password validation error: ${this.message}")
-                }
+                showValidationError(
+                    message = "Passwords do not match."
+                )
+                _validVerification.value = false
             }
             else -> {
                 if (_validEmail.value == true &&
@@ -125,8 +108,8 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                     Log.e(TAG, "SignUpBlock: email and password are valid.")
                     newUser.email?.let {
                         Log.e(TAG, "SignUpBlock: email was $it.")
-                        onLoginAttempt(
-                            VerificationOptions.NEW_USER,
+                        onSignUpAttempt(
+                            VerificationOptions.SIGN_UP,
                             it, password, context, newUser
                         )
                     }
@@ -140,6 +123,22 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                 }
             }
         }
+    }
+
+    private fun showValidationError(
+        message: String,
+        shouldShow: Boolean = true,
+        errorType: ErrorType = ErrorType.VALIDATION
+    ) {
+        _loginScreenState.value?.error = _loginScreenState.value?.error?.copy(
+            message = message,
+            shouldShow = shouldShow,
+            errorType = errorType
+        )!!
+        Log.e(
+            TAG,
+            "onSignUpAttempt: Validation error: ${_loginScreenState.value?.error?.message}"
+        )
     }
 
     @ExperimentalCoroutinesApi
@@ -209,24 +208,36 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     @ExperimentalCoroutinesApi
     @InternalCoroutinesApi
     fun onLoginAttempt(
-        verificationOption: VerificationOptions,
+        signInOption: SignInOptions,
         email: String,
         password: String,
-        context: Context,
-        user: User? = null
     ) {
         Log.e(
-            tag, "exiting screen content. \n VerificationOption:$verificationOption \n " +
+            tag, "exiting screen content. \n VerificationOption:$signInOption \n " +
                     "Email:$email \n Password:$password"
         )
 
-        when (verificationOption) {
-            VerificationOptions.EMAIL_PASSWORD -> {
+        when (signInOption) {
+            SignInOptions.EMAIL_PASSWORD -> {
                 Log.e(tag, "onLoginAttempt: in Verification option email/password.")
                 signInWithEmail(email, password)
             }
-            VerificationOptions.NEW_USER -> {
-                user?.let {
+            else -> {
+                Log.e(TAG, "onLoginAttempt: sign in option selected was $signInOption")
+            }
+        }
+    }
+
+    private fun onSignUpAttempt(
+        verificationOptions: VerificationOptions,
+        email: String,
+        password: String,
+        context: Context,
+        currentUser: User? = null
+    ) {
+        when (verificationOptions) {
+            VerificationOptions.SIGN_UP -> {
+                currentUser?.let {
                     signUpWithEmail(it, password)
                 }
             }
@@ -237,14 +248,14 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                 )
                 Toast.makeText(context, "[Error:$email]", Toast.LENGTH_LONG).show()
             }
-            VerificationOptions.PREVIOUS -> {
+            else -> {
                 Log.e(
-                    tag, "onLoginAttempt: Tying to go back to email/password from Sign Up. \n" +
-                            "HANDLE CASE TO RETURN TO LOGINSCREEN WITH LOGIN OPTION INSTEAD OF SIGN IN OPTION"
+                    TAG,
+                    "onSignUpAttempt: unhandled verification option was $verificationOptions",
                 )
-                toggleItems(Toggleable.SIGNUP)
             }
         }
+
     }
 
     private fun updateUser(user: User) = repo.updateUser(user)
@@ -252,5 +263,15 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
     fun clearLoginError() {
         _loginScreenState.value?.error = StudyAppError.newBlankInstance()
+    }
+
+    fun changeLoginMethod(signInMethod: SignInOptions) {
+        when (signInMethod) {
+            SignInOptions.EMAIL_PASSWORD -> {
+                _loginScreenState.value?.signInOption =
+                    SignInOptions.EMAIL_PASSWORD
+            }
+            SignInOptions.GOOGLE -> TODO()
+        }
     }
 }

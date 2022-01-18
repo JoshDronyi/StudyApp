@@ -22,14 +22,19 @@ sealed class State {
 
     sealed class ScreenState : State() {
         data class LoginScreenState(
-            var loginOption: VerificationOptions = VerificationOptions.EMAIL_PASSWORD,
-            var isSignUp: Boolean = false,
+            var loginOption: VerificationOptions = VerificationOptions.SIGN_IN,
+            var signInOption:SignInOptions = SignInOptions.EMAIL_PASSWORD,
             var showDatePicker: Boolean = false,
-            var error: StudyAppError? = null,
-            var apiState: ApiState<*> = ApiState.Sleep
+            var error: StudyAppError = StudyAppError.newBlankInstance(),
+            var email: String = "default",
+            var password: String = "passy1",
+            var validEmail: Boolean = true,
+            var validPassword: Boolean = true,
+            var apiState: ApiState<*> = ApiState.Sleep,
+            val currentUser: User = User.newBlankInstance()
         ) : ScreenState()
 
-        data class HomeScreenState(val currentUser: User = User.newBlankInstance()) : State()
+        object HomeScreenState : State()
 
         data class QuestionListScreenState(
             val questionList: List<Question>

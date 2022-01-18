@@ -28,16 +28,18 @@ import com.example.studyapp.R
 import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.sharedcomposables.ProfileTextField
 import com.example.studyapp.ui.viewmodel.UserViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 
 const val TAG = "Profile_Screen"
 
+@ExperimentalCoroutinesApi
 @InternalCoroutinesApi
 @ExperimentalCoilApi
 @Composable
 fun ProfileScreen(userViewModel: UserViewModel = viewModel()) {
-    val homeScreenState = userViewModel.homeScreenState.observeAsState()
-    val currentUser = homeScreenState.value?.currentUser!!
+    val loginScreenState = userViewModel.loginScreenState.observeAsState()
+    val currentUser = loginScreenState.value?.currentUser!!
 
     ProfileScreenContent(user = currentUser) { setting, settingValue ->
         when (setting) {

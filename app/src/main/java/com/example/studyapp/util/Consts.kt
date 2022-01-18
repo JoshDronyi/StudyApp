@@ -29,11 +29,14 @@ enum class DrawerOptions {
 }
 
 enum class VerificationOptions {
-    EMAIL_PASSWORD, NEW_USER, PREVIOUS, ERROR
+    SIGN_IN, SIGN_UP, ERROR
+}
+enum class SignInOptions{
+    EMAIL_PASSWORD, GOOGLE
 }
 
 enum class Toggleable {
-    SIGNUP, DATEPICKER
+    VERIFICATION, DATEPICKER
 }
 
 enum class ResultType {

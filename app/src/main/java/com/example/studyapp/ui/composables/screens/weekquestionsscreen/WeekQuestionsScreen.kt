@@ -46,7 +46,7 @@ fun QuestionListScreen(
     val questions by questionListViewModel.questions.observeAsState()
     val progress by questionListViewModel.currentProgress.observeAsState()
     val currentWeek by questionListViewModel.currentWeek.observeAsState()
-    val homeScreenState = userViewModel.homeScreenState.observeAsState()
+    val loginScreenState = userViewModel.loginScreenState.observeAsState()
 
     Column {
         questions?.let {
@@ -54,7 +54,7 @@ fun QuestionListScreen(
                 questions = it,
                 progress = progress,
                 currentWeek = currentWeek,
-                user = homeScreenState.value?.currentUser,
+                user = loginScreenState.value?.currentUser,
                 onAddNewQuestionSelect = ::newQuestionSelect
             ) { question ->
                 questionListViewModel.setCurrentQuestion(question)

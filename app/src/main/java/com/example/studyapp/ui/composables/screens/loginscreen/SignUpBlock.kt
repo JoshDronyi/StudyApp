@@ -1,7 +1,6 @@
 package com.example.studyapp.ui.composables.screens.loginscreen
 
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -17,11 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.dynamicanimation.animation.SpringAnimation
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.sharedcomposables.DatePicker
@@ -38,11 +35,10 @@ import kotlinx.coroutines.InternalCoroutinesApi
 @InternalCoroutinesApi
 @Composable
 fun SignUpBlock(
-    inValidInput: Boolean,
     showPicker: Boolean,
-    userViewModel: UserViewModel = viewModel()
+    userViewModel: UserViewModel = viewModel(),
+    onEventOccurred: (Events.LoginScreenEvents) -> Unit
 ) {
-
     val context = LocalContext.current
     val newUser: User by remember { mutableStateOf(User.newBlankInstance()) }
     var passwordText by remember { mutableStateOf("") }
@@ -90,8 +86,25 @@ fun SignUpBlock(
                 }
                 SignUpSteps.CONSULTANT_DETAILS -> {
                     SignUpBG("Consultant Details:") {
-                        AdditionalUserDetails(newUser, showPicker) { toggleable ->
-                            userViewModel.toggleItems(toggleable)
+                        AdditionalUserDetails(newUser, showPicker) { toggleable -> // will always be datepicker
+                            when (toggleable) {
+                                Toggleable.DATEPICKER -> {
+                                    onEventOccurred.invoke(
+                                        Events.LoginScreenEvents.onToggleOption(
+                                            toggleable, null
+                                        )
+                                    )
+                                }
+                                Toggleable.VERIFICATION -> {
+                                    onEventOccurred.invoke(
+                                        Events.LoginScreenEvents.onToggleOption(
+                                            toggleable,
+                                            VerificationOptions.SIGN_IN
+                                        )
+                                    )
+                                }
+                            }
+
                         }
                     }
                 }
@@ -103,7 +116,11 @@ fun SignUpBlock(
             currentStep = currentStep,
             onSignUpClicked = {
                 newUser.isDefault = false
-                userViewModel.onSignUpAttempt(newUser, passwordText, verifyPWText, context)
+                onEventOccurred.invoke(
+                    Events.LoginScreenEvents.onSignUpAttempt(
+                        newUser, passwordText, verifyPWText, context
+                    )
+                )
             },
             onNextSelected = { sentStep ->
                 when (sentStep) {
@@ -123,11 +140,11 @@ fun SignUpBlock(
             }) { sentStep: SignUpSteps ->
             when (sentStep) {
                 SignUpSteps.NAME_DETAILS -> {
-                    userViewModel.onLoginAttempt(
-                        VerificationOptions.PREVIOUS,
-                        "",
-                        "",
-                        context
+                    onEventOccurred.invoke(
+                        Events.LoginScreenEvents.onToggleOption(
+                            Toggleable.VERIFICATION,
+                            VerificationOptions.SIGN_IN
+                        )
                     )
                 }
                 SignUpSteps.ACCOUNT_DETAILS -> {
@@ -139,19 +156,6 @@ fun SignUpBlock(
             }
         }
         Spacer(Modifier.height(8.dp))
-    }
-}
-
-/**
- *
- * Takes the current sign up step and
- * the direction that we are moving
- */
-fun getNextStep(sentStep: SignUpSteps, isForward: Boolean) {
-    return if (isForward) {
-
-    } else {
-
     }
 }
 
@@ -262,6 +266,7 @@ fun DatePickerToggling(showPicker: Boolean, newUser: User, onToggleItem: (Toggle
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
     ) {
+        Log.e(TAG, "DatePickerToggling: showPicker was $showPicker")
         if (showPicker) {
             DatePicker(modifier = Modifier.fillMaxWidth(.5f)) { date ->
                 newUser.batchStartDate = date
@@ -359,5 +364,5 @@ fun NameDisplays(newUser: User) {
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun SignUpPreview() {
-    SignUpBlock(inValidInput = false, false)
+    //SignUpBlock(false){}
 }
