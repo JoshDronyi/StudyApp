@@ -11,19 +11,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.studyapp.ui.composables.sharedcomposables.OTFBuilder
-import com.example.studyapp.util.VerificationOptions
-import com.example.studyapp.util.validateEmail
-import com.example.studyapp.util.validatePassword
+import com.example.studyapp.util.*
+import com.example.studyapp.util.Events.LoginScreenEvents
+import com.example.studyapp.util.State.ScreenState.LoginScreenState
 
 @Composable
-fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: String) -> Unit) {
-    var emailValue by remember { mutableStateOf("") }
-    var passwordValue by remember { mutableStateOf("") }
-    var errorText by remember { mutableStateOf("") }
-    var validEmail by remember { mutableStateOf(true) }
-    var validPW by remember { mutableStateOf(true) }
+fun EmailPasswordBlock(
+    loginScreenState: LoginScreenState,
+    onClick: (event: LoginScreenEvents) -> Unit
+) {
+    val emailValue by remember { mutableStateOf(loginScreenState.email) }
+    val passwordValue by remember { mutableStateOf(loginScreenState.password) }
 
-    val TAG = "EMAIL_PASSWORD_BLOCK"
+    val tag = "EMAIL_PASSWORD_BLOCK"
     Column(
         modifier = Modifier.fillMaxWidth(.80f),
         verticalArrangement = Arrangement.Center,
@@ -32,18 +32,18 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
 
         OTFBuilder(
             label = "Email",
-            inValidInput = validEmail,
+            inValidInput = loginScreenState.validEmail,
             modifier = Modifier.fillMaxWidth()
         ) { value ->
-            emailValue = value
+            loginScreenState.email = value
         }
 
         OTFBuilder(
             label = "Password",
-            inValidInput = validPW,
+            inValidInput = loginScreenState.validPassword,
             modifier = Modifier.fillMaxWidth()
         ) { value ->
-            passwordValue = value
+            loginScreenState.password = value
         }
 
         Spacer(modifier = Modifier.heightIn(min = 30.dp, max = 60.dp))
@@ -51,29 +51,64 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
         Button(
             onClick = {
                 when {
-                    !emailValue.validateEmail() -> {
-                        errorText = "Invalid email entered [$emailValue]"
-                        validEmail = false
-                        onClick.invoke(VerificationOptions.ERROR, errorText, validEmail.toString())
+                    !loginScreenState.email.validateEmail() -> {
+                        with(loginScreenState) {
+                            this.copy(
+                                error = StudyAppError.newBlankInstance().apply {
+                                    message = "Invalid email entered [$emailValue]"
+                                    data = null
+                                    errorType = ErrorType.VALIDATION
+                                    shouldShow = true
+                                },
+                                validEmail = false
+                            )
+                        }
+
+                        onClick.invoke(
+                            LoginScreenEvents.onValidationError(
+                                loginScreenState.error,
+                                emailValue
+                            )
+                        )
+
                     }
-                    !passwordValue.validatePassword() -> {
-                        errorText =
-                            "Password must be at least 6 characters and contain at least 1 digit. " +
-                                    "\n password:[$passwordValue]"
-                        validPW = false
-                        onClick.invoke(VerificationOptions.ERROR, errorText, validPW.toString())
+                    !loginScreenState.password.validatePassword() -> {
+                        with(loginScreenState) {
+                            this.copy(
+                                error = StudyAppError.newBlankInstance().apply {
+                                    message =
+                                        "Password must be at least 6 characters and contain at least 1 digit. " +
+                                                "\n password:[$passwordValue]"
+                                    data = null
+                                    errorType = ErrorType.VALIDATION
+                                    shouldShow = true
+                                },
+                                validPassword = false
+                            )
+                        }
+                        onClick.invoke(
+                            LoginScreenEvents.onValidationError(
+                                loginScreenState.error,
+                                passwordValue
+                            )
+                        )
                     }
                     else -> {
-                        if (validEmail && validPW) {
-                            onClick.invoke(
-                                VerificationOptions.EMAIL_PASSWORD,
-                                emailValue.trim(),
-                                passwordValue.trim()
-                            )
+                        if (loginScreenState.validEmail
+                            && loginScreenState.validPassword
+                        ) {
                             Log.e(
-                                TAG,
+                                tag,
                                 "Sign in button clicked with valid email:$emailValue and password:$passwordValue"
                             )
+                            onClick.invoke(
+                                LoginScreenEvents.onEmailLoginAttempt(
+                                    loginScreenState.email,
+                                    loginScreenState.password
+                                )
+                            )
+                        } else {
+                            Log.e(TAG, "EmailPasswordBlock: Invalid email or password.")
                         }
                     }
                 }
@@ -88,7 +123,12 @@ fun EmailPasswordBlock(onClick: (VerificationOptions, email: String, password: S
         Text(
             text = "Don't have an account? Sign up here!!",
             modifier = Modifier.clickable {
-                onClick.invoke(VerificationOptions.NEW_USER, emailValue, passwordValue)
+                onClick.invoke(
+                    LoginScreenEvents
+                        .onToggleOption(
+                            Toggleable.VERIFICATION, VerificationOptions.SIGN_UP
+                        )
+                )
             },
             textAlign = TextAlign.Center
         )

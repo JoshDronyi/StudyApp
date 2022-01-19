@@ -61,12 +61,12 @@ fun String.validatePassword(): Boolean = this.let { theString: String ->
 
 fun verifyText(
     context: Context,
-    verificationOption: VerificationOptions,
+    verificationOption: SignInOptions,
     email: String,
     password: String
 ): Boolean {
     return when (verificationOption) {
-        VerificationOptions.EMAIL_PASSWORD -> {
+        SignInOptions.EMAIL_PASSWORD -> {
             Toast.makeText(
                 context,
                 "Email/Password chosen \nEmail:$email\nPassword:$password",
@@ -176,6 +176,9 @@ fun returnSnapShotAsUser(snapshot: DataSnapshot): User {
         snapshot.children.map {
             Log.e(TAG, "returnSnapShotAsUser: KEY WAS ${it.key}, VALUE WAS ${it.value}")
             when (it.key?.lowercase()) {
+                UserDTOAttributes.ID.value -> {
+                    this.uid = it.value.toString()
+                }
                 UserDTOAttributes.First.value -> {
                     this.firstName = it.value.toString()
                 }
@@ -194,10 +197,17 @@ fun returnSnapShotAsUser(snapshot: DataSnapshot): User {
                 UserDTOAttributes.BatchStartDate.value -> {
                     this.batchStartDate = it.value.toString()
                 }
+                UserDTOAttributes.Email.value -> {
+                    this.email = it.value.toString()
+                }
+                UserDTOAttributes.Phone.value -> {
+                    this.phoneNumber = it.value.toString()
+                }
             }
         }
     }
-    return user
+    Log.e(TAG, "returnSnapShotAsUser: user after refactor was $user")
+    return user.apply { isDefault = false }
 }
 
 fun returnErrorAsStudyAppError(error: DatabaseError): StudyAppError {

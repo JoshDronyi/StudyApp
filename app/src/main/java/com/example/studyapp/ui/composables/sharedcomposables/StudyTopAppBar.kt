@@ -52,7 +52,7 @@ fun StudyTopAppBar(
                         colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
                     )
                 }
-                Screens.WeekQuestionsScreen.route, Screens.QuestionScreen.route -> {
+                else -> {
                     Image(
                         imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "Toggle the drawer menu",

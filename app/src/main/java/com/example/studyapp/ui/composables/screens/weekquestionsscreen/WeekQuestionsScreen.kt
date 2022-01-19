@@ -2,7 +2,6 @@ package com.example.studyapp.ui.composables.screens.weekquestionsscreen
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -48,6 +46,7 @@ fun QuestionListScreen(
     val questions by questionListViewModel.questions.observeAsState()
     val progress by questionListViewModel.currentProgress.observeAsState()
     val currentWeek by questionListViewModel.currentWeek.observeAsState()
+    val loginContract = userViewModel.loginScreenContract.collectAsState()
 
     Column {
         questions?.let {
@@ -55,7 +54,7 @@ fun QuestionListScreen(
                 questions = it,
                 progress = progress,
                 currentWeek = currentWeek,
-                user = userViewModel.currentUser.value,
+                user = loginContract.value.screenState.currentUser,
                 onAddNewQuestionSelect = ::newQuestionSelect
             ) { question ->
                 questionListViewModel.setCurrentQuestion(question)

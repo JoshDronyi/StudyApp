@@ -16,12 +16,12 @@ import com.example.studyapp.data.model.User
 import com.example.studyapp.util.DrawerOptions
 import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.Screens
-import com.example.studyapp.util.State
+import com.example.studyapp.util.State.ApiState
 
 @ExperimentalCoilApi
 @Composable
 fun NavDrawer(
-    screenState: State.ApiState<Any>?,
+    user: User?,
     shouldCloseDrawer: (shouldClose: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -29,25 +29,20 @@ fun NavDrawer(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        when (screenState) {
-            is State.ApiState.Success.UserApiSuccess -> {
-                with(screenState.data as User) {
-                    DrawerImage(
-                        imageID = R.drawable.ic_account_circle,
-                        description = firstName ?: "Bob the builder",
-                        imageUrl = Uri.parse(photoUrl)
-                    )
-                }
-            }
-            else -> {
-                DrawerImage(
-                    imageID = R.drawable.ic_account_circle,
-                    description = "Image of account holder",
-                    imageUrl = null
-                )
+        Log.e(TAG, "NavDrawer: user  was $user")
 
-            }
-        }
+        user?.let {
+            Log.e(TAG, "NavDrawer: url was ${it.photoUrl}")
+            DrawerImage(
+                imageUrl = Uri.parse(it.photoUrl),
+                description = it.firstName,
+            )
+        } ?: DrawerImage(
+            imageID = R.drawable.ic_account_circle,
+            description = "Account User's name",
+            imageUrl = null
+        )
+
 
         Divider()
         DrawerItem(text = DrawerOptions.HOME) {

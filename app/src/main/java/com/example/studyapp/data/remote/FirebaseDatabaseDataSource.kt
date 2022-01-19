@@ -9,10 +9,7 @@ import com.google.firebase.database.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
 
 @ExperimentalCoroutinesApi
 fun addValueListenerToReference(
@@ -20,7 +17,7 @@ fun addValueListenerToReference(
     error: DatabaseError?,
     resultType: ResultType,
     week: String
-) = callbackFlow {
+) = callbackFlow<ApiState<*>> {
     val tag = "addValueListener"
     val listener = object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
@@ -122,7 +119,10 @@ class FirebaseDatabaseDataSource {
                         }
                     }
                 }
-            Log.e(TAG, "addNewQuestionToWeek: Trying to push question[$question] into week [$week]")
+            Log.e(
+                TAG,
+                "addNewQuestionToWeek: Trying to push1 question[$question] into week [$week]"
+            )
             awaitClose {
                 Log.e(
                     TAG,
@@ -131,12 +131,12 @@ class FirebaseDatabaseDataSource {
             }
         }
 
-    fun getQuestionsByWeek(week: String) = flow {
+    fun getQuestionsByWeek(week: String) = channelFlow {
         val ref = getReference("Questions")
             .child("/$week")
 
         addValueListenerToReference(ref, error = null, ResultType.QUESTION, week).collectLatest {
-            emit(it)
+            send(it)
         }
     }
 
@@ -145,4 +145,22 @@ class FirebaseDatabaseDataSource {
         .child(user.uid)
         .setValue(true)
 
+    fun updateUser(user: User) = getReference("Users")
+        .child(user.uid)
+        .setValue(user)
+
+    fun getUserDetailsFromNetwork(user: User) = channelFlow {
+        val userDBRef = getReference("Users")
+            .child(user.uid)
+
+        addValueListenerToReference(
+            userDBRef,
+            resultType = ResultType.USER,
+            error = null,
+            week = ""
+        ).collectLatest {
+            send(it)
+        }
+
+    }
 }
