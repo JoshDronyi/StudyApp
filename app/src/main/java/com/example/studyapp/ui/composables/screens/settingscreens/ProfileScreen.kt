@@ -12,6 +12,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,18 +29,20 @@ import com.example.studyapp.R
 import com.example.studyapp.data.model.User
 import com.example.studyapp.ui.composables.sharedcomposables.ProfileTextField
 import com.example.studyapp.ui.viewmodel.UserViewModel
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 
 const val TAG = "Profile_Screen"
 
+@DelicateCoroutinesApi
 @ExperimentalCoroutinesApi
 @InternalCoroutinesApi
 @ExperimentalCoilApi
 @Composable
 fun ProfileScreen(userViewModel: UserViewModel = viewModel()) {
-    val loginScreenState = userViewModel.loginScreenState.observeAsState()
-    val currentUser = loginScreenState.value?.currentUser!!
+    val loginScreenContract = userViewModel.loginScreenContract.collectAsState()
+    val currentUser = loginScreenContract.value.screenState.currentUser
 
     ProfileScreenContent(user = currentUser) { setting, settingValue ->
         when (setting) {

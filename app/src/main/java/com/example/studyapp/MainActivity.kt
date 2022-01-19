@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,13 +56,13 @@ class MainActivity : AppCompatActivity() {
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
-        val loginScreenState = userViewModel.loginScreenState.observeAsState()
+        val loginContract = userViewModel.loginScreenContract.collectAsState()
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
                 NavDrawer(
-                    user = loginScreenState.value?.currentUser
+                    user = loginContract.value.screenState.currentUser
                 ) { shouldClose ->
                     scope.launch {
                         if (shouldClose) {

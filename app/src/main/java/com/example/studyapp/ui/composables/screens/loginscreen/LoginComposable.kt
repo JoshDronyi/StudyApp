@@ -5,7 +5,6 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -37,9 +36,7 @@ fun LoginScreen(
     userViewModel: UserViewModel = viewModel()
 ) {
     Log.e(TAG, "LoginScreen: drawing Login Screen")
-    var loginContract by remember { mutableStateOf(LoginContract()) }
-    val loginState by userViewModel.loginScreenState.observeAsState()
-    loginContract.screenState.value = loginState
+    val loginContract by userViewModel.loginScreenContract.collectAsState(initial = LoginContract())
 
     when (val event = loginContract.screenSideEffects) {
         is LoginScreenSideEffects.SetLoginType -> {
@@ -79,24 +76,23 @@ fun LoginScreen(
 
 
     LoginScreenContent(
-        loginContract.screenState.value!!,
+        loginContract.screenState,
     ) { event ->
         Log.e(
             TAG,
-            "LoginScreen: sign in method is ${loginContract.screenState.value?.signInOption}"
+            "LoginScreen: sign in method is ${loginContract.screenState.signInOption}"
         )
-        loginContract.screenEvent.value = event
+        userViewModel.setEvent(event)
         when (event) {
             is LoginScreenEvents.onLoginMethodSwitch -> {
                 when (event.signInMethod) {
                     SignInOptions.EMAIL_PASSWORD -> {
                         Log.e(
                             TAG,
-                            "LoginScreen: setting the login method value from -> ${loginState?.signInOption}"
+                            "LoginScreen: setting the login method value from -> ${event.signInMethod}"
                         )
-                        loginContract = loginContract.copy(
-                            screenSideEffects = LoginScreenSideEffects.SetLoginType(event.signInMethod)
-                        )
+
+                        userViewModel.setSideEffect(LoginScreenSideEffects.SetLoginType(event.signInMethod))
 
                     }
                     else -> {
@@ -113,8 +109,8 @@ fun LoginScreen(
                     TAG,
                     "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
                 )
-                loginContract = loginContract.copy(
-                    screenSideEffects = LoginScreenSideEffects.EmailLoginAttempt(
+                userViewModel.setSideEffect(
+                    LoginScreenSideEffects.EmailLoginAttempt(
                         event.email,
                         event.password
                     )
@@ -122,22 +118,22 @@ fun LoginScreen(
             }
             is LoginScreenEvents.onClearError -> {
                 Log.e(TAG, "LoginScreen: Clearing previous error.")
-                loginContract = loginContract.copy(
-                    screenSideEffects = LoginScreenSideEffects.ClearError
+                userViewModel.setSideEffect(
+                    LoginScreenSideEffects.ClearError
                 )
             }
             is LoginScreenEvents.onToggleOption -> {
                 Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
-                loginContract = loginContract.copy(
-                    screenSideEffects = LoginScreenSideEffects.ToggleItems(
+                userViewModel.setSideEffect(
+                    LoginScreenSideEffects.ToggleItems(
                         event.toggleable,
                         event.verification
                     )
                 )
             }
             is LoginScreenEvents.onSignUpAttempt -> {
-                loginContract = loginContract.copy(
-                    screenSideEffects = LoginScreenSideEffects.OnSignUpAttempt(
+                userViewModel.setSideEffect(
+                    LoginScreenSideEffects.OnSignUpAttempt(
                         event.newUser, event.passwordText, event.verifyPWText, event.context
                     )
                 )

@@ -11,12 +11,14 @@ import com.example.studyapp.data.model.User
 import com.example.studyapp.data.remote.AuthDataSource
 import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.repo.UserRepository
+import com.example.studyapp.ui.composables.screens.loginscreen.LoginContract
 import com.example.studyapp.ui.composables.screens.loginscreen.TAG
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
-import com.example.studyapp.util.State.ScreenState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import javax.inject.Inject
 
@@ -31,10 +33,10 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
     private val tag = "USER_VIEW_MODEL"
 
-    //Login Screen
-    private val _loginScreenState: MutableLiveData<ScreenState.LoginScreenState> =
-        MutableLiveData(ScreenState.LoginScreenState())
-    val loginScreenState: LiveData<ScreenState.LoginScreenState> get() = _loginScreenState
+    //Login Screen Contract
+    private val _loginScreenContract: MutableStateFlow<LoginContract> =
+        MutableStateFlow(LoginContract())
+    val loginScreenContract: StateFlow<LoginContract> get() = _loginScreenContract
 
     //Validation Variables
     private val _validEmail = MutableLiveData(true)
@@ -46,25 +48,30 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
 
     fun toggleItems(itemToToggle: Toggleable, verification: VerificationOptions?) {
-        with(_loginScreenState) {
+        with(loginScreenContract.value) {
             /**
-             * isSignUp and showDatePicker both have default values of false
+             * signInOption and showDatePicker both have default values
              * on instantiation and are non-Nullable attributes so they
              * will always have a value
              */
             when (itemToToggle) {
                 Toggleable.VERIFICATION -> {
                     verification?.let {
-                        this.value =
-                            this.value?.copy(
-                                signInOption = this.value?.signInOption!!,
-                                loginOption = it
-                            ) //Default value set to false
+                        Log.e(
+                            TAG,
+                            "toggleItems: Toggling verification to $it, sign in Option = ${screenState.signInOption}",
+                        )
+                        screenState = screenState.copy(
+                            signInOption = this.screenState.signInOption,
+                            loginOption = it
+                        )
                     }
                 }
                 Toggleable.DATEPICKER -> {
-                    this.value =
-                        this.value?.copy(showDatePicker = (!this.value?.showDatePicker!!)) //Default value set to false
+                    screenState = screenState.copy(
+                        showDatePicker = (!screenState.showDatePicker)
+                    )
+                    //Default value set to false
                 }
             }
         }
@@ -130,14 +137,15 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         shouldShow: Boolean = true,
         errorType: ErrorType = ErrorType.VALIDATION
     ) {
-        _loginScreenState.value?.error = _loginScreenState.value?.error?.copy(
-            message = message,
-            shouldShow = shouldShow,
-            errorType = errorType
-        )!!
+        _loginScreenContract.value.screenState.error =
+            _loginScreenContract.value.screenState.error.copy(
+                message = message,
+                shouldShow = shouldShow,
+                errorType = errorType
+            )
         Log.e(
             TAG,
-            "onSignUpAttempt: Validation error: ${_loginScreenState.value?.error?.message}"
+            "onSignUpAttempt: Validation error: ${_loginScreenContract.value.screenState.error.message}"
         )
     }
 
@@ -146,7 +154,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private fun signInWithEmail(email: String, password: String) =
         viewModelScope.launch(Dispatchers.IO) {
             Log.e(tag, "signInWithEmail: Calling Repo with result. State is loading.")
-            _loginScreenState.value?.apiState = ApiState.Loading
+            _loginScreenContract.value.screenState.apiState = ApiState.Loading
             repo.signInWithEmail(email, password).collectLatest { state ->
                 handleUserState(state)
             }
@@ -157,7 +165,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private fun signUpWithEmail(user: User, password: String) {
         Log.e(tag, "signUpWithEmail: Calling Repo with result")
         viewModelScope.launch(Dispatchers.IO) {
-            _loginScreenState.value?.apiState = ApiState.Loading
+            _loginScreenContract.value.screenState.apiState = ApiState.Loading
             repo.createNewUserProfile(user, password).collectLatest { state ->
                 handleUserState(state)
             }
@@ -180,7 +188,8 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                         tag,
                         "handleUserState: Got a valid user object. Username: ${user.firstName} email: ${user.email}"
                     )
-                    _loginScreenState.value?.apiState = ApiState.Success.UserApiSuccess(user)
+                    _loginScreenContract.value.screenState.apiState =
+                        ApiState.Success.UserApiSuccess(user)
                     if (Navigator.currentScreen.value != Screens.MainScreen) {
                         Navigator.navigateTo(Screens.MainScreen)
                     }
@@ -191,7 +200,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
             is ApiState.Error -> {
                 with(userState.data) {
                     Log.e(tag, "handleUserState: Error from studyapp: $this")
-                    _loginScreenState.value?.error = this
+                    _loginScreenContract.value.screenState.error = this
                 }
 
             }
@@ -262,16 +271,26 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
 
     fun clearLoginError() {
-        _loginScreenState.value?.error = StudyAppError.newBlankInstance()
+        _loginScreenContract.value.screenState.error = StudyAppError.newBlankInstance()
     }
 
     fun changeLoginMethod(signInMethod: SignInOptions) {
         when (signInMethod) {
             SignInOptions.EMAIL_PASSWORD -> {
-                _loginScreenState.value?.signInOption =
-                    SignInOptions.EMAIL_PASSWORD
+                _loginScreenContract.value.screenState =
+                    _loginScreenContract.value.screenState.copy(
+                        signInOption = SignInOptions.EMAIL_PASSWORD
+                    )
             }
             SignInOptions.GOOGLE -> TODO()
         }
+    }
+
+    fun setSideEffect(effect: SideEffects.LoginScreenSideEffects) {
+        _loginScreenContract.value = _loginScreenContract.value.copy(screenSideEffects = effect)
+    }
+
+    fun setEvent(event: Events.LoginScreenEvents) {
+        _loginScreenContract.value = _loginScreenContract.value.copy(screenEvent = event)
     }
 }
