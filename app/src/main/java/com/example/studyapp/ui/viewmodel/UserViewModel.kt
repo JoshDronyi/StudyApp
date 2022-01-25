@@ -11,7 +11,8 @@ import com.example.studyapp.data.model.User
 import com.example.studyapp.data.remote.AuthDataSource
 import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.ui.composables.screens.loginscreen.LoginContract
+import com.example.studyapp.ui.composables.screen_contracts.HomeContract
+import com.example.studyapp.ui.composables.screen_contracts.LoginContract
 import com.example.studyapp.ui.composables.screens.loginscreen.TAG
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
@@ -33,10 +34,13 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
 
     private val tag = "USER_VIEW_MODEL"
 
-    //Login Screen Contract
+    //private mutable contracts
     private val _loginScreenContract: MutableStateFlow<LoginContract> =
         MutableStateFlow(LoginContract())
+
+    //public contracts
     val loginScreenContract: StateFlow<LoginContract> get() = _loginScreenContract
+
 
     //Validation Variables
     private val _validEmail = MutableLiveData(true)
@@ -198,9 +202,10 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                 }
             }
             is ApiState.Error -> {
-                with(userState.data) {
-                    Log.e(tag, "handleUserState: Error from studyapp: $this")
-                    _loginScreenContract.value.screenState.error = this
+                with(_loginScreenContract.value.screenState) {
+                    Log.e(tag, "handleUserState: Error from studyapp: ${userState.data}")
+                    error = userState.data
+                    apiState = ApiState.Sleep
                 }
 
             }

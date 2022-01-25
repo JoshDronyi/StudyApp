@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -19,23 +20,29 @@ import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 
 
+@ExperimentalCoroutinesApi
 @Composable
 fun QuestionScreen(
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val tag = "QUESTIONSCREEN"
+    val scope = rememberCoroutineScope()
     val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
 
     currentQuestion?.let {
         CurrentQuestionContent(question = it) { text, question ->
             if (checkButtonAnswer(text, question, questionListViewModel)) {
                 Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
-            }else{
-                Log.e(tag,"Question Screen: last question has been answered.")
-                questionListViewModel.stopQuestions()
-                Navigator.navigateUp()
+            } else {
+                scope.launch {
+                    Log.e(tag, "Question Screen: last question has been answered.")
+                    questionListViewModel.clearApiState()
+                    Navigator.navigateUp()
+                }
             }
         }
     }

@@ -23,7 +23,7 @@ sealed class State {
     sealed class ScreenState : State() {
         data class LoginScreenState(
             var loginOption: VerificationOptions = VerificationOptions.SIGN_IN,
-            var signInOption:SignInOptions = SignInOptions.EMAIL_PASSWORD,
+            var signInOption: SignInOptions = SignInOptions.EMAIL_PASSWORD,
             var showDatePicker: Boolean = false,
             var error: StudyAppError = StudyAppError.newBlankInstance(),
             var email: String = "default",
@@ -34,7 +34,9 @@ sealed class State {
             val currentUser: User = User.newBlankInstance()
         ) : ScreenState()
 
-        object HomeScreenState : State()
+        data class HomeScreenState(
+            var apiState: ApiState<*> = ApiState.Sleep
+        ) : State()
 
         data class QuestionListScreenState(
             val questionList: List<Question>

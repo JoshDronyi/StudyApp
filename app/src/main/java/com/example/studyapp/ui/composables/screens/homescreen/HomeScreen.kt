@@ -1,42 +1,34 @@
 package com.example.studyapp.ui.composables.screens.homescreen
 
-import android.content.Context
 import android.util.Log
-import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.layoutId
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.max
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
-import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.*
+import com.example.studyapp.util.Events.HomeScreenEvents
+import com.example.studyapp.util.SideEffects.HomeScreenSideEffects.*
 import com.example.studyapp.util.State.ApiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 
-//helpful variable. Should be raised.
-private const val CHECK_TAG = "CheckApiState function"
 const val TAG = "HomeScreen"
 
 @ExperimentalCoroutinesApi
@@ -44,48 +36,49 @@ const val TAG = "HomeScreen"
 fun MyAppScreen(
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
-    val TAG = "My App Screen"
-    val apiState by questionListViewModel.apiState.observeAsState()
-    Log.e(TAG, "MyAppScreen: Drawing MyApp Screen. State is $apiState")
-    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val homeScreenContract by questionListViewModel.homeScreenContract.collectAsState(HomeContract())
+    val theEffect = rememberUpdatedState(newValue = homeScreenContract.screenSideEffects)
+    val theState = rememberUpdatedState(newValue = homeScreenContract.screenState.apiState)
 
-    Column {
-        MyApp { week ->
-            Log.e(TAG, "MyAppScreen: Changing current week to $week")
-            when (week) {
-                WK1, WK2, WK3, WK4, WK5, WK6 -> {
-                    Log.e(
-                        TAG,
-                        "changeCurrentWeek: Changing currentWeek in questionListViewModel. for week $week"
-                    )
-                    questionListViewModel.currentWeek.value = week
-                    questionListViewModel.getQuestions(week)
-                }
-                else -> {
-                    Toast.makeText(
-                        context,
-                        "Please select questions from weeks 1-6",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+    LaunchedEffect(theEffect.value, theState.value) {
+        when (val effect = theEffect.value) {
+            is SetCurrentWeek -> {
+                questionListViewModel.getQuestions(effect.currentweek)
+            }
+        }
+        Log.e(TAG, "MyAppScreen: Side Effect Launched!")
+        Log.e(TAG, "MyAppScreen: Checking state. $theState")
+        when (val state = theState.value) {
+            is ApiState.Success.QuestionApiSuccess -> {
+                Log.e(
+                    TAG,
+                    "MyAppScreen: Success: $state, setting questionList"
+                )
+                questionListViewModel.setQuestionList(state.questionList)
+                questionListViewModel.clearApiState()
+                Navigator.navigateTo(Screens.WeekQuestionsScreen)
+            }
+            is ApiState.Sleep, is ApiState.Loading -> {
+                Log.e(TAG, "STATE : $state)")
+            }
+            else -> {
+                Log.e(TAG, "STATE ERROR: Unrecognized Api State: $state")
             }
         }
     }
 
-    Log.e(TAG, "Api state was $apiState")
-
-    SideEffect {
-        Log.e(TAG, "MyAppScreen: Side Effect Launched!")
-        apiState?.let {
-            Log.e(TAG, "MyAppScreen: Checking state. $it")
-            checkApiState(it, questionListViewModel)
+    Column {
+        MyApp { event ->
+            scope.launch {
+                questionListViewModel.setHomeScreenEvent(event)
+            }
         }
     }
-
 }
 
 @Composable
-fun MyApp(onWeekSelect: (weekNumber: String) -> Unit) {
+fun MyApp(onWeekSelect: (event: HomeScreenEvents) -> Unit) {
     Surface(color = MaterialTheme.colors.background) {
         Column(
             modifier = Modifier
@@ -105,7 +98,9 @@ fun MyApp(onWeekSelect: (weekNumber: String) -> Unit) {
             Spacer(modifier = Modifier.height(80.dp))
 
             WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
-                onWeekSelect.invoke(weekNumber)
+                onWeekSelect.invoke(
+                    HomeScreenEvents.onWeekSelected(weekNumber)
+                )
             }
         }
     }
@@ -193,26 +188,4 @@ fun WeekButton(
         }
     }
 
-}
-
-private fun checkApiState(
-    questionListState: ApiState<*>,
-    questionListViewModel: QuestionListViewModel
-) {
-    Log.e(CHECK_TAG, "checkApiState: Checking the state $questionListState")
-    with(questionListState) {
-        when (this) {
-            is ApiState.Success.QuestionApiSuccess -> {
-                Log.e(CHECK_TAG, "MyAppScreen: Success: $this, setting questionList")
-                questionListViewModel.setQuestionList(this.questionList)
-                Navigator.navigateTo(Screens.WeekQuestionsScreen)
-            }
-            is ApiState.Sleep, is ApiState.Loading -> {
-                Log.e(CHECK_TAG, "STATE : ${this})")
-            }
-            else -> {
-                Log.e(CHECK_TAG, "STATE ERROR: Unrecognized Api State. $this")
-            }
-        }
-    }
 }

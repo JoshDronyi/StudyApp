@@ -64,7 +64,6 @@ fun StudyTopAppBar(
                         },
                         colorFilter = ColorFilter.tint(color = MaterialTheme.colors.secondary)
                     )
-
                 }
             }
 

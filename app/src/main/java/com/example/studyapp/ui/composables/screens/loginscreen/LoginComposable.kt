@@ -12,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.studyapp.R
+import com.example.studyapp.ui.composables.screen_contracts.LoginContract
 import com.example.studyapp.ui.composables.sharedcomposables.ErrorDialog
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.UserViewModel

@@ -8,11 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.QuestionRepository
+import com.example.studyapp.ui.composables.screen_contracts.HomeContract
+import com.example.studyapp.util.Events
+import com.example.studyapp.util.SideEffects
 import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,6 +24,14 @@ import javax.inject.Inject
 @HiltViewModel
 class QuestionListViewModel @Inject constructor(private val repository: QuestionRepository) :
     ViewModel() {
+
+
+    //private screen contracts
+    private val _homeScreenContract: MutableStateFlow<HomeContract> =
+        MutableStateFlow(HomeContract())
+
+    //observable contracts
+    val homeScreenContract: StateFlow<HomeContract> get() = _homeScreenContract
 
     private val _questions = MutableLiveData<List<Question>>()
     val questions: LiveData<List<Question>>
@@ -37,19 +48,21 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     val currentWeek = MutableLiveData<String>()
 
-    private val _apiState =
-        MutableLiveData<ApiState<*>>(ApiState.Sleep)
-    val apiState: LiveData<ApiState<*>>
-        get() = _apiState
-
-
     private val TAG = "QuestionListViewModel"
 
 
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(TAG, "getQuestions:  week was $week")
-        _apiState.postValue(ApiState.Loading)
+        with(_homeScreenContract) {
+            emit(
+                value.copy(
+                    screenState = value.screenState.apply {
+                        apiState = ApiState.Loading
+                    }
+                )
+            )
+        }
 
         Log.e(TAG, "getQuestions: Launched coroutine.")
         repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
@@ -63,23 +76,46 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                     repository.getQuestionsByWeekOnDatabase(week).collect { questionList ->
                         Log.e(
                             TAG,
-                            "getQuestions(inside repo lambda): Questions from DB -> $questionList"
+                            "getQuestions(inside repo DB lambda): Questions from DB -> $questionList"
                         )
                         if (questionList.isNotEmpty()) {
                             Log.e(TAG, "getQuestions: Questions from the database is not empty")
 
                             val list: List<Question> =
-                                dataFromTheInternet.questionList.mapIndexed { index, internet ->
-                                    internet.questionStatus = questionList[index].questionStatus
-                                    internet
-                                }
+                                dataFromTheInternet
+                                    .questionList
+                                    .mapIndexed { index, internet ->
+                                        internet.questionStatus = questionList[index].questionStatus
+                                        internet
+                                    }
 
-                            _apiState.postValue(ApiState.Success.QuestionApiSuccess(list))
+                            Log.e(TAG, "getQuestions: value of the list is $list")
+                            with(_homeScreenContract) {
+                                emit(
+                                    value.copy(
+                                        screenState = value.screenState.copy(
+                                            apiState = ApiState.Success.QuestionApiSuccess(list)
+                                        )
+                                    )
+                                )
+                            }
                         } else {
                             Log.e(
                                 TAG,
                                 "getQuestions: questions from the database was empty.$questionList"
                             )
+
+                            repository.saveQuestionsInDatabase(dataFromTheInternet.questionList)
+
+                            with(_homeScreenContract) {
+                                emit(
+                                    value.copy(
+                                        screenState = value.screenState.copy(
+                                            apiState = dataFromTheInternet
+                                        )
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -87,13 +123,21 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                     Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
                 }
             }
-            _apiState.postValue(dataFromTheInternet)
         }
     }
 
-    fun stopQuestions() {
-        _apiState.value = ApiState.Sleep
+    fun clearApiState() = viewModelScope.launch {
+        with(_homeScreenContract) {
+            emit(
+                value.copy(
+                    screenState = value.screenState.apply {
+                        apiState = ApiState.Sleep
+                    }
+                )
+            )
+        }
     }
+
 
     fun getNewQuestion(): Boolean {
         return _questions.value?.let { questions ->
@@ -144,12 +188,43 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
             TAG,
             "addNewQuestion: adding new question in VM for week  $week. Question: $question "
         )
-        repository.addNewQuestionToWeek(week, question).collect { theFlow ->
+        repository.addNewQuestionToWeek(week, question).collect { theApiState ->
             Log.e(
                 TAG,
-                "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theFlow) back."
+                "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theApiState) back."
             )
-            _apiState.postValue(theFlow)
+            with(_homeScreenContract) {
+                emit(
+                    value.copy(
+                        screenState = value.screenState.copy(apiState = theApiState)
+                    )
+                )
+            }
+        }
+    }
+
+    suspend fun setHomeScreenEvent(event: Events.HomeScreenEvents) {
+        Log.e(TAG, "setHomeScreenEvent: the event was $event")
+        lateinit var sideEffect: SideEffects
+        when (event) {
+            is Events.HomeScreenEvents.onWeekSelected -> {
+                currentWeek.value = event.selectedWeek
+                sideEffect = SideEffects.HomeScreenSideEffects
+                    .SetCurrentWeek(event.selectedWeek)
+
+                with(_homeScreenContract) {
+                    Log.e(
+                        TAG,
+                        "setHomeScreenEvent: emitting... \nEvent: $event \nSideEffect: $sideEffect"
+                    )
+                    emit(
+                        value.copy(screenSideEffects = sideEffect)
+                    )
+                }
+            }
+            else -> {
+                Log.e(TAG, "setHomeScreenEvent: unhandled event was $event")
+            }
         }
     }
 }
