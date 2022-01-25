@@ -9,6 +9,7 @@ import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
+import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
 import com.example.studyapp.util.State.ApiState
@@ -29,13 +30,12 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     //private screen contracts
     private val _homeScreenContract: MutableStateFlow<HomeContract> =
         MutableStateFlow(HomeContract())
+    private val _questionListContract: MutableStateFlow<QuestionListContract> =
+        MutableStateFlow(QuestionListContract())
 
     //observable contracts
     val homeScreenContract: StateFlow<HomeContract> get() = _homeScreenContract
-
-    private val _questions = MutableLiveData<List<Question>>()
-    val questions: LiveData<List<Question>>
-        get() = _questions
+    val questionListContract: StateFlow<QuestionListContract> get() = _questionListContract
 
     private val _currentQuestion = MutableLiveData<Question>()
     val currentQuestion: LiveData<Question>
@@ -139,15 +139,14 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
 
-    fun getNewQuestion(): Boolean {
-        return _questions.value?.let { questions ->
-            shouldShowNextQuestion(questions)
-        } ?: false
-    }
+    fun getNewQuestion(): Boolean = shouldShowNextQuestion(
+        _questionListContract.value.screenState.questionList
+    )
+
 
     fun setQuestionList(questions: List<Question>) {
         Log.e(TAG, "setQuestionList: Setting question list to $questions")
-        _questions.value = questions
+        _questionListContract.value.screenState.questionList = questions
     }
 
 
@@ -182,7 +181,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
 
-    fun setCurrentQuestion(question: Question) = _currentQuestion.postValue(question)
+    fun setCurrentQuestion(question: Question) =  _currentQuestion.postValue(question)
     fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(
             TAG,

@@ -1,6 +1,7 @@
 package com.example.studyapp.util
 
 import com.example.studyapp.data.model.Question
+import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.model.User
 
 sealed class State {
@@ -39,7 +40,9 @@ sealed class State {
         ) : State()
 
         data class QuestionListScreenState(
-            val questionList: List<Question>
+            var questionList: List<Question>,
+            var progress: StudentProgress,
+            var currentWeek: String = WK1
         ) : ScreenState()
 
         data class QuestionScreenState(

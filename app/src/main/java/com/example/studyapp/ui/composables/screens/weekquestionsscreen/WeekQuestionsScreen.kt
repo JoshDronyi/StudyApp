@@ -11,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,11 +30,13 @@ import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
 import com.example.studyapp.util.Screens
 import com.example.studyapp.util.generateStudentProgress
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 
 const val TAG = "WEEK_QUESTIONS_SCREEN"
 
+@DelicateCoroutinesApi
 @InternalCoroutinesApi
 @ExperimentalCoroutinesApi
 @Composable
@@ -43,24 +44,24 @@ fun QuestionListScreen(
     userViewModel: UserViewModel = viewModel(),
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
-    val questions by questionListViewModel.questions.observeAsState()
-    val progress by questionListViewModel.currentProgress.observeAsState()
-    val currentWeek by questionListViewModel.currentWeek.observeAsState()
-    val loginContract = userViewModel.loginScreenContract.collectAsState()
+    val questionListContract by questionListViewModel.questionListContract.collectAsState()
+    val loginContract by userViewModel.loginScreenContract.collectAsState()
 
     Column {
-        questions?.let {
+        with(questionListContract.screenState) {
             WeekQuestions(
-                questions = it,
+                questions = questionList,
                 progress = progress,
                 currentWeek = currentWeek,
-                user = loginContract.value.screenState.currentUser,
+                user = loginContract.screenState.currentUser,
                 onAddNewQuestionSelect = ::newQuestionSelect
             ) { question ->
                 questionListViewModel.setCurrentQuestion(question)
                 Navigator.navigateTo(Screens.QuestionScreen)
             }
-            questionListViewModel.setCurrentProgress(it.generateStudentProgress())
+            questionListViewModel.setCurrentProgress(
+                questionList.generateStudentProgress()
+            )
         }
     }
 }
