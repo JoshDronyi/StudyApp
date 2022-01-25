@@ -38,32 +38,32 @@ fun MyAppScreen(
 ) {
     val scope = rememberCoroutineScope()
     val homeScreenContract by questionListViewModel.homeScreenContract.collectAsState(HomeContract())
-    val theEffect = rememberUpdatedState(newValue = homeScreenContract.screenSideEffects)
-    val theState = rememberUpdatedState(newValue = homeScreenContract.screenState.apiState)
+    val theEffect = homeScreenContract.screenSideEffects
+    val theState = homeScreenContract.screenState.apiState
 
-    LaunchedEffect(theEffect.value, theState.value) {
-        when (val effect = theEffect.value) {
+    LaunchedEffect(theEffect, theState) {
+        when (val effect = theEffect) {
             is SetCurrentWeek -> {
                 questionListViewModel.getQuestions(effect.currentweek)
             }
         }
         Log.e(TAG, "MyAppScreen: Side Effect Launched!")
         Log.e(TAG, "MyAppScreen: Checking state. $theState")
-        when (val state = theState.value) {
+        when (theState) {
             is ApiState.Success.QuestionApiSuccess -> {
                 Log.e(
                     TAG,
-                    "MyAppScreen: Success: $state, setting questionList"
+                    "MyAppScreen: Success: $theState, setting questionList"
                 )
-                questionListViewModel.setQuestionList(state.questionList)
+                questionListViewModel.setQuestionList(theState.questionList)
                 questionListViewModel.clearApiState()
                 Navigator.navigateTo(Screens.WeekQuestionsScreen)
             }
             is ApiState.Sleep, is ApiState.Loading -> {
-                Log.e(TAG, "STATE : $state)")
+                Log.e(TAG, "STATE : $theState)")
             }
             else -> {
-                Log.e(TAG, "STATE ERROR: Unrecognized Api State: $state")
+                Log.e(TAG, "STATE ERROR: Unrecognized Api State: $theState")
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -31,21 +32,22 @@ fun QuestionScreen(
 ) {
     val tag = "QUESTIONSCREEN"
     val scope = rememberCoroutineScope()
-    val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
 
-    currentQuestion?.let {
-        CurrentQuestionContent(question = it) { text, question ->
-            if (checkButtonAnswer(text, question, questionListViewModel)) {
-                Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
-            } else {
-                scope.launch {
-                    Log.e(tag, "Question Screen: last question has been answered.")
-                    questionListViewModel.clearApiState()
-                    Navigator.navigateUp()
-                }
+    val questionContract by questionListViewModel.questionContract.collectAsState()
+
+    Log.e(tag, "QuestionScreen: current question ${questionContract.screenState.currentQuestion}")
+    CurrentQuestionContent(question = questionContract.screenState.currentQuestion) { text, question ->
+        if (checkButtonAnswer(text, question, questionListViewModel)) {
+            Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
+        } else {
+            scope.launch {
+                Log.e(tag, "Question Screen: last question has been answered.")
+                questionListViewModel.clearApiState()
+                Navigator.navigateUp()
             }
         }
     }
+
 }
 
 

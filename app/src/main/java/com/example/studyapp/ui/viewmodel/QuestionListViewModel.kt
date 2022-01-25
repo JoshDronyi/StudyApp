@@ -1,8 +1,6 @@
 package com.example.studyapp.ui.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.Question
@@ -10,13 +8,16 @@ import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
+import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
 import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,21 +33,14 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
         MutableStateFlow(HomeContract())
     private val _questionListContract: MutableStateFlow<QuestionListContract> =
         MutableStateFlow(QuestionListContract())
+    private val _questionContract: MutableStateFlow<QuestionScreenContract> =
+        MutableStateFlow(QuestionScreenContract())
 
     //observable contracts
     val homeScreenContract: StateFlow<HomeContract> get() = _homeScreenContract
     val questionListContract: StateFlow<QuestionListContract> get() = _questionListContract
+    val questionContract: StateFlow<QuestionScreenContract> get() = _questionContract
 
-    private val _currentQuestion = MutableLiveData<Question>()
-    val currentQuestion: LiveData<Question>
-        get() = _currentQuestion
-
-
-    private val _currentProgress = MutableLiveData<StudentProgress>()
-    val currentProgress: LiveData<StudentProgress>
-        get() = _currentProgress
-
-    val currentWeek = MutableLiveData<String>()
 
     private val TAG = "QuestionListViewModel"
 
@@ -128,6 +122,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     fun clearApiState() = viewModelScope.launch {
         with(_homeScreenContract) {
+            Log.e(TAG, "clearApiState: clearing api state")
             emit(
                 value.copy(
                     screenState = value.screenState.apply {
@@ -150,28 +145,34 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
 
-    private fun shouldShowNextQuestion(questions: List<Question>): Boolean {
-        currentQuestion.value?.let { currentQuestion ->
-            Log.e("Question Number", currentQuestion.questionNumber)
+    private fun shouldShowNextQuestion(questions: List<Question>): Boolean =
+        with(_questionContract.value) {
+            Log.e("Question Number", screenState.currentQuestion.questionNumber)
             Log.e("Last Number", questions.lastIndex.toString())
 
             return shouldShowNextQuestion(
-                currentQuestion.questionNumber.toInt(),
+                screenState.currentQuestion.questionNumber.toInt(),
                 questions.lastIndex
             ).also {
                 if (it) {
-                    _currentQuestion.postValue(questions[currentQuestion.questionNumber.toInt()])
+                    screenState = screenState.copy(
+                        currentQuestion =
+                        questions[screenState.currentQuestion.questionNumber.toInt()]
+                    )
                 }
             }
         }
-        return false
-    }
 
-    fun shouldShowNextQuestion(currentQuestionNumber: Int, lastQuestionNumber: Int): Boolean =
+
+    private fun shouldShowNextQuestion(
+        currentQuestionNumber: Int,
+        lastQuestionNumber: Int
+    ): Boolean =
         currentQuestionNumber <= lastQuestionNumber
 
-    fun setCurrentProgress(currentProgress: StudentProgress) =
-        _currentProgress.postValue(currentProgress)
+    fun setCurrentProgress(currentProgress: StudentProgress) {
+        _questionListContract.value.screenState.progress = currentProgress
+    }
 
 
     fun updateQuestionStatus(question: Question) {
@@ -181,7 +182,10 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
 
-    fun setCurrentQuestion(question: Question) =  _currentQuestion.postValue(question)
+    fun setCurrentQuestion(question: Question) = with(_questionContract.value) {
+        screenState = screenState.copy(currentQuestion = question)
+    }
+
     fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(
             TAG,
@@ -207,7 +211,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
         lateinit var sideEffect: SideEffects
         when (event) {
             is Events.HomeScreenEvents.onWeekSelected -> {
-                currentWeek.value = event.selectedWeek
+                _questionListContract.value.screenState.currentWeek = event.selectedWeek
                 sideEffect = SideEffects.HomeScreenSideEffects
                     .SetCurrentWeek(event.selectedWeek)
 

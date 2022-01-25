@@ -23,4 +23,10 @@ data class Question(
         answer2,
         answer3
     ).shuffled()
+
+    companion object {
+        fun newBlankInstance(): Question {
+            return Question("", "", "", "", "", "", "", "", "", "")
+        }
+    }
 }
