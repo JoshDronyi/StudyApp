@@ -11,6 +11,7 @@ import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
+import com.example.studyapp.util.State
 import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -229,5 +230,17 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                 Log.e(TAG, "setHomeScreenEvent: unhandled event was $event")
             }
         }
+    }
+
+    fun clearSideEffects() {
+        _questionContract.value.screenSideEffects = SideEffects.QuestionScreenSideEffects()
+        _questionListContract.value.sideEffects = SideEffects.QuestionListScreenSideEffects()
+        _homeScreenContract.value.screenSideEffects = SideEffects.HomeScreenSideEffects()
+    }
+
+    fun clearEvents() {
+        _questionContract.value.screenEvents = Events.QuestionScreenEvents()
+        _questionListContract.value.screenEvent = Events.QuestionListScreenEvents()
+        _homeScreenContract.value.screenEvent = Events.HomeScreenEvents()
     }
 }

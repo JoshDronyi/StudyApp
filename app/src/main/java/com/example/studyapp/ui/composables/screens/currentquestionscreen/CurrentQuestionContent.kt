@@ -47,9 +47,7 @@ fun QuestionScreen(
             }
         }
     }
-
 }
-
 
 @Composable
 fun CurrentQuestionContent(

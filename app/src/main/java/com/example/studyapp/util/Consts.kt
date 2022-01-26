@@ -23,6 +23,9 @@ enum class QuestionStatus {
 enum class ButtonOptions {
     MENU, BACK, SETTINGS
 }
+enum class NavTarget {
+    PREV, HOME, LIST, QUESTION, SETTINGS, NEW_QUESTION, MENU
+}
 
 enum class DrawerOptions {
     HOME, SCOREBOARD, PROFILE

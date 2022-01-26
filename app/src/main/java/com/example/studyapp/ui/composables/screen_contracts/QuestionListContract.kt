@@ -6,10 +6,10 @@ import com.example.studyapp.util.SideEffects.QuestionListScreenSideEffects
 import com.example.studyapp.util.State.ScreenState.QuestionListScreenState
 
 data class QuestionListContract(
-    val screenState: QuestionListScreenState = QuestionListScreenState(
+    var screenState: QuestionListScreenState = QuestionListScreenState(
         listOf(),
         StudentProgress(0, 0, 0, 0)
     ),
-    val screenEvent: QuestionListScreenEvents = QuestionListScreenEvents(),
-    val sideEffects: QuestionListScreenSideEffects = QuestionListScreenSideEffects()
+    var screenEvent: QuestionListScreenEvents = QuestionListScreenEvents(),
+    var sideEffects: QuestionListScreenSideEffects = QuestionListScreenSideEffects()
 )

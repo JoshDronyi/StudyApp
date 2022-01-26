@@ -26,10 +26,10 @@ sealed class SideEffects {
             val context: Context
         ) : LoginScreenSideEffects()
     }
-    /*
+
     data class NavigationEffect(
         val navTarget: NavTarget
-    ):SideEffects()*/
+    ):SideEffects()
 
     open class HomeScreenSideEffects : SideEffects() {
         data class SetCurrentWeek(var currentweek: String) : HomeScreenSideEffects()
