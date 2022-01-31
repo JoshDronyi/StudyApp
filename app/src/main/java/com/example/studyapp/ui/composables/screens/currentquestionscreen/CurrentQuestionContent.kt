@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -19,28 +21,33 @@ import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 
 
+@ExperimentalCoroutinesApi
 @Composable
 fun QuestionScreen(
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val tag = "QUESTIONSCREEN"
-    val currentQuestion by questionListViewModel.currentQuestion.observeAsState()
+    val scope = rememberCoroutineScope()
 
-    currentQuestion?.let {
-        CurrentQuestionContent(question = it) { text, question ->
-            if (checkButtonAnswer(text, question, questionListViewModel)) {
-                Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
-            }else{
-                Log.e(tag,"Question Screen: last question has been answered.")
-                questionListViewModel.stopQuestions()
+    val questionContract by questionListViewModel.questionContract.collectAsState()
+
+    Log.e(tag, "QuestionScreen: current question ${questionContract.screenState.currentQuestion}")
+    CurrentQuestionContent(question = questionContract.screenState.currentQuestion) { text, question ->
+        if (checkButtonAnswer(text, question, questionListViewModel)) {
+            Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
+        } else {
+            scope.launch {
+                Log.e(tag, "Question Screen: last question has been answered.")
+                questionListViewModel.clearApiState()
                 Navigator.navigateUp()
             }
         }
     }
 }
-
 
 @Composable
 fun CurrentQuestionContent(

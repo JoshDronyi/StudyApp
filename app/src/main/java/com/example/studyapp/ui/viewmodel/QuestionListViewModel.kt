@@ -1,17 +1,23 @@
 package com.example.studyapp.ui.viewmodel
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.repo.QuestionRepository
+import com.example.studyapp.ui.composables.screen_contracts.HomeContract
+import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
+import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
+import com.example.studyapp.util.Events
+import com.example.studyapp.util.SideEffects
+import com.example.studyapp.util.State
 import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,25 +28,19 @@ import javax.inject.Inject
 class QuestionListViewModel @Inject constructor(private val repository: QuestionRepository) :
     ViewModel() {
 
-    private val _questions = MutableLiveData<List<Question>>()
-    val questions: LiveData<List<Question>>
-        get() = _questions
 
-    private val _currentQuestion = MutableLiveData<Question>()
-    val currentQuestion: LiveData<Question>
-        get() = _currentQuestion
+    //private screen contracts
+    private val _homeScreenContract: MutableStateFlow<HomeContract> =
+        MutableStateFlow(HomeContract())
+    private val _questionListContract: MutableStateFlow<QuestionListContract> =
+        MutableStateFlow(QuestionListContract())
+    private val _questionContract: MutableStateFlow<QuestionScreenContract> =
+        MutableStateFlow(QuestionScreenContract())
 
-
-    private val _currentProgress = MutableLiveData<StudentProgress>()
-    val currentProgress: LiveData<StudentProgress>
-        get() = _currentProgress
-
-    val currentWeek = MutableLiveData<String>()
-
-    private val _apiState =
-        MutableLiveData<ApiState<*>>(ApiState.Sleep)
-    val apiState: LiveData<ApiState<*>>
-        get() = _apiState
+    //observable contracts
+    val homeScreenContract: StateFlow<HomeContract> get() = _homeScreenContract
+    val questionListContract: StateFlow<QuestionListContract> get() = _questionListContract
+    val questionContract: StateFlow<QuestionScreenContract> get() = _questionContract
 
 
     private val TAG = "QuestionListViewModel"
@@ -49,7 +49,15 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(TAG, "getQuestions:  week was $week")
-        _apiState.postValue(ApiState.Loading)
+        with(_homeScreenContract) {
+            emit(
+                value.copy(
+                    screenState = value.screenState.apply {
+                        apiState = ApiState.Loading
+                    }
+                )
+            )
+        }
 
         Log.e(TAG, "getQuestions: Launched coroutine.")
         repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
@@ -63,23 +71,46 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                     repository.getQuestionsByWeekOnDatabase(week).collect { questionList ->
                         Log.e(
                             TAG,
-                            "getQuestions(inside repo lambda): Questions from DB -> $questionList"
+                            "getQuestions(inside repo DB lambda): Questions from DB -> $questionList"
                         )
                         if (questionList.isNotEmpty()) {
                             Log.e(TAG, "getQuestions: Questions from the database is not empty")
 
                             val list: List<Question> =
-                                dataFromTheInternet.questionList.mapIndexed { index, internet ->
-                                    internet.questionStatus = questionList[index].questionStatus
-                                    internet
-                                }
+                                dataFromTheInternet
+                                    .questionList
+                                    .mapIndexed { index, internet ->
+                                        internet.questionStatus = questionList[index].questionStatus
+                                        internet
+                                    }
 
-                            _apiState.postValue(ApiState.Success.QuestionApiSuccess(list))
+                            Log.e(TAG, "getQuestions: value of the list is $list")
+                            with(_homeScreenContract) {
+                                emit(
+                                    value.copy(
+                                        screenState = value.screenState.copy(
+                                            apiState = ApiState.Success.QuestionApiSuccess(list)
+                                        )
+                                    )
+                                )
+                            }
                         } else {
                             Log.e(
                                 TAG,
                                 "getQuestions: questions from the database was empty.$questionList"
                             )
+
+                            repository.saveQuestionsInDatabase(dataFromTheInternet.questionList)
+
+                            with(_homeScreenContract) {
+                                emit(
+                                    value.copy(
+                                        screenState = value.screenState.copy(
+                                            apiState = dataFromTheInternet
+                                        )
+                                    )
+                                )
+                            }
                         }
                     }
                 }
@@ -87,48 +118,62 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                     Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
                 }
             }
-            _apiState.postValue(dataFromTheInternet)
         }
     }
 
-    fun stopQuestions() {
-        _apiState.value = ApiState.Sleep
+    fun clearApiState() = viewModelScope.launch {
+        with(_homeScreenContract) {
+            Log.e(TAG, "clearApiState: clearing api state")
+            emit(
+                value.copy(
+                    screenState = value.screenState.apply {
+                        apiState = ApiState.Sleep
+                    }
+                )
+            )
+        }
     }
 
-    fun getNewQuestion(): Boolean {
-        return _questions.value?.let { questions ->
-            shouldShowNextQuestion(questions)
-        } ?: false
-    }
+
+    fun getNewQuestion(): Boolean = shouldShowNextQuestion(
+        _questionListContract.value.screenState.questionList
+    )
+
 
     fun setQuestionList(questions: List<Question>) {
         Log.e(TAG, "setQuestionList: Setting question list to $questions")
-        _questions.value = questions
+        _questionListContract.value.screenState.questionList = questions
     }
 
 
-    private fun shouldShowNextQuestion(questions: List<Question>): Boolean {
-        currentQuestion.value?.let { currentQuestion ->
-            Log.e("Question Number", currentQuestion.questionNumber)
+    private fun shouldShowNextQuestion(questions: List<Question>): Boolean =
+        with(_questionContract.value) {
+            Log.e("Question Number", screenState.currentQuestion.questionNumber)
             Log.e("Last Number", questions.lastIndex.toString())
 
             return shouldShowNextQuestion(
-                currentQuestion.questionNumber.toInt(),
+                screenState.currentQuestion.questionNumber.toInt(),
                 questions.lastIndex
             ).also {
                 if (it) {
-                    _currentQuestion.postValue(questions[currentQuestion.questionNumber.toInt()])
+                    screenState = screenState.copy(
+                        currentQuestion =
+                        questions[screenState.currentQuestion.questionNumber.toInt()]
+                    )
                 }
             }
         }
-        return false
-    }
 
-    fun shouldShowNextQuestion(currentQuestionNumber: Int, lastQuestionNumber: Int): Boolean =
+
+    private fun shouldShowNextQuestion(
+        currentQuestionNumber: Int,
+        lastQuestionNumber: Int
+    ): Boolean =
         currentQuestionNumber <= lastQuestionNumber
 
-    fun setCurrentProgress(currentProgress: StudentProgress) =
-        _currentProgress.postValue(currentProgress)
+    fun setCurrentProgress(currentProgress: StudentProgress) {
+        _questionListContract.value.screenState.progress = currentProgress
+    }
 
 
     fun updateQuestionStatus(question: Question) {
@@ -138,18 +183,64 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
 
-    fun setCurrentQuestion(question: Question) = _currentQuestion.postValue(question)
+    fun setCurrentQuestion(question: Question) = with(_questionContract.value) {
+        screenState = screenState.copy(currentQuestion = question)
+    }
+
     fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(
             TAG,
             "addNewQuestion: adding new question in VM for week  $week. Question: $question "
         )
-        repository.addNewQuestionToWeek(week, question).collect { theFlow ->
+        repository.addNewQuestionToWeek(week, question).collect { theApiState ->
             Log.e(
                 TAG,
-                "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theFlow) back."
+                "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theApiState) back."
             )
-            _apiState.postValue(theFlow)
+            with(_homeScreenContract) {
+                emit(
+                    value.copy(
+                        screenState = value.screenState.copy(apiState = theApiState)
+                    )
+                )
+            }
         }
+    }
+
+    suspend fun setHomeScreenEvent(event: Events.HomeScreenEvents) {
+        Log.e(TAG, "setHomeScreenEvent: the event was $event")
+        lateinit var sideEffect: SideEffects
+        when (event) {
+            is Events.HomeScreenEvents.onWeekSelected -> {
+                _questionListContract.value.screenState.currentWeek = event.selectedWeek
+                sideEffect = SideEffects.HomeScreenSideEffects
+                    .SetCurrentWeek(event.selectedWeek)
+
+                with(_homeScreenContract) {
+                    Log.e(
+                        TAG,
+                        "setHomeScreenEvent: emitting... \nEvent: $event \nSideEffect: $sideEffect"
+                    )
+                    emit(
+                        value.copy(screenSideEffects = sideEffect)
+                    )
+                }
+            }
+            else -> {
+                Log.e(TAG, "setHomeScreenEvent: unhandled event was $event")
+            }
+        }
+    }
+
+    fun clearSideEffects() {
+        _questionContract.value.screenSideEffects = SideEffects.QuestionScreenSideEffects()
+        _questionListContract.value.sideEffects = SideEffects.QuestionListScreenSideEffects()
+        _homeScreenContract.value.screenSideEffects = SideEffects.HomeScreenSideEffects()
+    }
+
+    fun clearEvents() {
+        _questionContract.value.screenEvents = Events.QuestionScreenEvents()
+        _questionListContract.value.screenEvent = Events.QuestionListScreenEvents()
+        _homeScreenContract.value.screenEvent = Events.HomeScreenEvents()
     }
 }
