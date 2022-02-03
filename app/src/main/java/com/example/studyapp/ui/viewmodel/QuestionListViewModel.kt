@@ -11,7 +11,6 @@ import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
-import com.example.studyapp.util.State
 import com.example.studyapp.util.State.ApiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +26,6 @@ import javax.inject.Inject
 @HiltViewModel
 class QuestionListViewModel @Inject constructor(private val repository: QuestionRepository) :
     ViewModel() {
-
 
     //private screen contracts
     private val _homeScreenContract: MutableStateFlow<HomeContract> =
@@ -48,143 +46,122 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
-        Log.e(TAG, "getQuestions:  week was $week")
-        with(_homeScreenContract) {
-            emit(
-                value.copy(
-                    screenState = value.screenState.apply {
-                        apiState = ApiState.Loading
-                    }
-                )
-            )
-        }
 
-        Log.e(TAG, "getQuestions: Launched coroutine.")
+        Log.e(TAG, "getQuestions:  week was $week")
+        setHomeScreenAPIState(ApiState.Loading)
+
         repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
             Log.e(
                 TAG,
                 " getQuestions (inside repo lambda): Questions from Internet -> $dataFromTheInternet"
             )
-            when (dataFromTheInternet) {
-                is ApiState.Success.QuestionApiSuccess -> {
-                    //Save question to the database
-                    repository.getQuestionsByWeekOnDatabase(week).collect { questionList ->
+            compareRemoteQuestionSet(week, dataFromTheInternet)
+        }
+    }
+
+    private suspend fun compareRemoteQuestionSet(week: String, dataFromTheInternet: ApiState<*>) {
+        when (dataFromTheInternet) {
+            is ApiState.Success.QuestionApiSuccess -> {
+                //Save question to the database
+                repository.getQuestionsByWeekOnDatabase(week).collect { localQuestionList ->
+                    Log.e(
+                        TAG,
+                        "getQuestions(inside repo DB lambda): Questions from DB -> $localQuestionList"
+                    )
+
+                    if (localQuestionList.isNotEmpty()) {
+                        val finalList: MutableList<Question> = mutableListOf()
+                        val unsavedQuestions: MutableList<Question> = mutableListOf()
+
+                        Log.e(TAG, "getQuestions: Questions from the database is not empty")
+
+                        dataFromTheInternet.questionList.forEachIndexed { index, internet ->
+                            Log.e(
+                                TAG,
+                                "getQuestions: index was $index, \n questionList was ${localQuestionList[index]} \n internet was $internet "
+                            )
+                            if (localQuestionList.contains(internet)) {
+                                val questionIndex = localQuestionList.indexOf(internet)
+                                internet.questionStatus =
+                                    localQuestionList[questionIndex].questionStatus
+                            } else {
+                                unsavedQuestions.add(internet)
+                            }
+                            finalList.add(internet)
+                        }
+
+                        if (!unsavedQuestions.isNullOrEmpty()) {
+                            Log.e(
+                                TAG,
+                                "compareRemoteQuestionSet: unsavedQuestions were $unsavedQuestions",
+                            )
+                            saveQuestionInDB(*unsavedQuestions.toTypedArray())
+                        }
+
+                        finalList.addAll(unsavedQuestions)
                         Log.e(
                             TAG,
-                            "getQuestions(inside repo DB lambda): Questions from DB -> $questionList"
+                            "compareRemoteQuestionSet: Setting APIState -> Final list was $finalList"
                         )
-                        if (questionList.isNotEmpty()) {
-                            Log.e(TAG, "getQuestions: Questions from the database is not empty")
-
-                            val list: List<Question> =
-                                dataFromTheInternet
-                                    .questionList
-                                    .mapIndexed { index, internet ->
-                                        internet.questionStatus = questionList[index].questionStatus
-                                        internet
-                                    }
-
-                            Log.e(TAG, "getQuestions: value of the list is $list")
-                            with(_homeScreenContract) {
-                                emit(
-                                    value.copy(
-                                        screenState = value.screenState.copy(
-                                            apiState = ApiState.Success.QuestionApiSuccess(list)
-                                        )
-                                    )
-                                )
-                            }
+                        setHomeScreenAPIState(
+                            ApiState.Success.QuestionApiSuccess(finalList)
+                        )
+                    } else {
+                        Log.e(
+                            TAG,
+                            "getQuestions: questions from the database was empty. \n $localQuestionList"
+                        )
+                        if (dataFromTheInternet.questionList.isNotEmpty()) {
+                            Log.e(
+                                TAG,
+                                "compareRemoteQuestionSet: setting homeState to $dataFromTheInternet",
+                            )
+                            setHomeScreenAPIState(dataFromTheInternet)
                         } else {
                             Log.e(
                                 TAG,
-                                "getQuestions: questions from the database was empty.$questionList"
+                                "compareRemoteQuestionSet: the question set from the internet was empty"
                             )
-
-                            repository.saveQuestionsInDatabase(dataFromTheInternet.questionList)
-
-                            with(_homeScreenContract) {
-                                emit(
-                                    value.copy(
-                                        screenState = value.screenState.copy(
-                                            apiState = dataFromTheInternet
-                                        )
-                                    )
-                                )
-                            }
                         }
                     }
                 }
-                else -> {
-                    Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
-                }
+            }
+            else -> {
+                Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
             }
         }
     }
 
-    fun clearApiState() = viewModelScope.launch {
-        with(_homeScreenContract) {
-            Log.e(TAG, "clearApiState: clearing api state")
-            emit(
-                value.copy(
-                    screenState = value.screenState.apply {
-                        apiState = ApiState.Sleep
-                    }
+    private fun setHomeScreenAPIState(state: ApiState<*>) =
+        viewModelScope.launch {
+            with(_homeScreenContract) {
+                emit(
+                    value.copy(
+                        screenState = value.screenState.copy(
+                            apiState = state
+                        )
+                    )
                 )
-            )
+            }
         }
+
+    fun clearApiState() = viewModelScope.launch {
+        Log.e(TAG, "clearApiState: clearing api state")
+        setHomeScreenAPIState(ApiState.Sleep)
     }
-
-
-    fun getNewQuestion(): Boolean = shouldShowNextQuestion(
-        _questionListContract.value.screenState.questionList
-    )
-
 
     fun setQuestionList(questions: List<Question>) {
         Log.e(TAG, "setQuestionList: Setting question list to $questions")
         _questionListContract.value.screenState.questionList = questions
     }
 
-
-    private fun shouldShowNextQuestion(questions: List<Question>): Boolean =
-        with(_questionContract.value) {
-            Log.e("Question Number", screenState.currentQuestion.questionNumber)
-            Log.e("Last Number", questions.lastIndex.toString())
-
-            return shouldShowNextQuestion(
-                screenState.currentQuestion.questionNumber.toInt(),
-                questions.lastIndex
-            ).also {
-                if (it) {
-                    screenState = screenState.copy(
-                        currentQuestion =
-                        questions[screenState.currentQuestion.questionNumber.toInt()]
-                    )
-                }
-            }
-        }
-
-
-    private fun shouldShowNextQuestion(
-        currentQuestionNumber: Int,
-        lastQuestionNumber: Int
-    ): Boolean =
-        currentQuestionNumber <= lastQuestionNumber
-
     fun setCurrentProgress(currentProgress: StudentProgress) {
         _questionListContract.value.screenState.progress = currentProgress
     }
 
 
-    fun updateQuestionStatus(question: Question) {
-        viewModelScope.launch {
-            repository.saveQuestionsInDatabase(listOf(question))
-        }
-    }
-
-
-    fun setCurrentQuestion(question: Question) = with(_questionContract.value) {
-        screenState = screenState.copy(currentQuestion = question)
+    fun saveQuestionInDB(vararg question: Question) = viewModelScope.launch {
+        repository.saveQuestionsInDatabase(question.asList())
     }
 
     fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
@@ -197,13 +174,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                 TAG,
                 "addNewQuestion: collecting the repo method sending in $week, $question, got theFlow($theApiState) back."
             )
-            with(_homeScreenContract) {
-                emit(
-                    value.copy(
-                        screenState = value.screenState.copy(apiState = theApiState)
-                    )
-                )
-            }
+            setHomeScreenAPIState(theApiState)
         }
     }
 
@@ -222,7 +193,10 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                         "setHomeScreenEvent: emitting... \nEvent: $event \nSideEffect: $sideEffect"
                     )
                     emit(
-                        value.copy(screenSideEffects = sideEffect)
+                        value.copy(
+                            screenSideEffects = sideEffect,
+                            screenEvent = event
+                        )
                     )
                 }
             }
@@ -233,14 +207,43 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
     fun clearSideEffects() {
-        _questionContract.value.screenSideEffects = SideEffects.QuestionScreenSideEffects()
         _questionListContract.value.sideEffects = SideEffects.QuestionListScreenSideEffects()
         _homeScreenContract.value.screenSideEffects = SideEffects.HomeScreenSideEffects()
     }
 
-    fun clearEvents() {
-        _questionContract.value.screenEvents = Events.QuestionScreenEvents()
-        _questionListContract.value.screenEvent = Events.QuestionListScreenEvents()
-        _homeScreenContract.value.screenEvent = Events.HomeScreenEvents()
+    //Question page methods
+
+    private fun shouldShowNextQuestion(questions: List<Question>): Boolean =
+        with(_questionContract.value) {
+            android.util.Log.e("Question Number", screenState.currentQuestion.questionNumber)
+            android.util.Log.e("Last Number", questions.lastIndex.toString())
+
+            return shouldShowNextQuestion(
+                screenState.currentQuestion.questionNumber.toInt(),
+                questions.lastIndex
+            ).also {
+                if (it) {
+                    screenState = screenState.copy(
+                        currentQuestion =
+                        questions[screenState.currentQuestion.questionNumber.toInt()]
+                    )
+                }
+            }
+        }
+
+    fun getNewQuestion(): Boolean = shouldShowNextQuestion(
+        _questionContract.value.screenState.questionList
+    )
+
+    fun setCurrentQuestion(question: Question) = with(_questionContract.value) {
+        screenState = screenState.copy(currentQuestion = question)
     }
+
+    private fun shouldShowNextQuestion(
+        currentQuestionNumber: Int,
+        lastQuestionNumber: Int
+    ): Boolean =
+        currentQuestionNumber <= lastQuestionNumber
+
+
 }

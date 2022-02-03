@@ -8,7 +8,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -170,11 +169,11 @@ private fun checkButtonAnswer(
     questionListViewModel: QuestionListViewModel
 ): Boolean {
     if (text == question.correctAnswer) {
-        questionListViewModel.updateQuestionStatus(question.apply {
+        questionListViewModel.saveQuestionInDB(question.apply {
             questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal.toString()
         })
     } else {
-        questionListViewModel.updateQuestionStatus(question.apply {
+        questionListViewModel.saveQuestionInDB(question.apply {
             questionStatus = QuestionStatus.WRONG_ANSWER.ordinal.toString()
         })
     }

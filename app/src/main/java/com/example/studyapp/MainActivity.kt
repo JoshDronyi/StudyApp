@@ -9,6 +9,7 @@ import androidx.compose.animation.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             StudyAppTheme {
                 AppNavigator(userViewModel)
@@ -56,13 +58,13 @@ class MainActivity : AppCompatActivity() {
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
-        val loginContract = userViewModel.loginScreenContract.collectAsState()
+        val loginContract by userViewModel.loginScreenContract.collectAsState()
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
                 NavDrawer(
-                    user = loginContract.value.screenState.currentUser
+                    user = loginContract.screenState.currentUser
                 ) { shouldClose ->
                     scope.launch {
                         if (shouldClose) {
@@ -82,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                     destination = Navigator.currentScreen.value,
                     state = state,
                     onMenuClick = { options, isOpen ->
-                        onMenuClick(options, questionListVM, isOpen) {
+                        onMenuClick(options, isOpen) {
                             when (state.drawerState.currentValue) {
                                 DrawerValue.Closed -> {
                                     scope.launch {
@@ -100,6 +102,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         ) {
+            Log.e(tag, "AppNavigator: Current screen is ${Navigator.currentScreen}")
             Crossfade(targetState = Navigator.currentScreen) { screenState ->
                 when (screenState.value) {
                     is Screens.LoginScreen -> {
@@ -123,6 +126,7 @@ class MainActivity : AppCompatActivity() {
                         NewQuestionScreen { week, question ->
                             Log.e(tag, "AppNavigator: Question was $question for week $week")
                             questionListVM.addNewQuestion(week, question)
+                            Navigator.navigateUp()
                         }
                     }
                     else -> {
@@ -139,7 +143,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun onMenuClick(
         option: ButtonOptions,
-        questionListVM: QuestionListViewModel,
         isOpen: Boolean,
         onDrawerToggle: (isOpen: Boolean) -> Unit
     ) {

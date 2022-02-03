@@ -175,8 +175,6 @@ fun NewQuestionScreen(onQuestionAdded: (week: String, question: Question) -> Uni
                     .show()
 
                 onQuestionAdded.invoke(week, newQuestion)
-                Navigator.navigateUp()
-
             }) {
                 Text(text = "Add Question.")
             }

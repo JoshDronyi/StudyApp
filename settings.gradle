@@ -5,24 +5,24 @@ pluginManagement {
         mavenCentral()
     }
     plugins {
-        id 'com.android.application' version '7.1.0-alpha03'
-        id 'com.android.library' version '7.1.0-alpha03'
-        id 'org.jetbrains.kotlin.android' version '1.5.30'
+        id 'com.android.application' version '7.1.0'
+        id 'com.android.library' version '7.1.0'
+        id 'org.jetbrains.kotlin.android' version '1.5.31'
         id 'org.jetbrains.kotlin.kapt' version '1.5.10'
-        id 'dagger.hilt.android.plugin' version '2.37'
         id 'com.google.gms.google-services' version '4.3.8'
         id 'com.google.firebase.crashlytics' version '2.7.1'
+        id 'dagger.hilt.android.plugin' version '2.40.5'
     }
     resolutionStrategy {
         eachPlugin {
-            if (requested.id.id == 'dagger.hilt.android.plugin') {
-                useModule('com.google.dagger:hilt-android-gradle-plugin:2.37')
-            }
             if (requested.id.id == 'com.google.gms.google-services') {
                 useModule('com.google.gms:google-services:4.3.8')
             }
             if (requested.id.id == 'com.google.firebase.crashlytics'){
                 useModule('com.google.firebase:firebase-crashlytics-gradle:2.7.1')
+            }
+            if (requested.id.id == 'dagger.hilt.android.plugin'){
+                useModule('com.google.dagger:hilt-android-gradle-plugin:2.40.5')
             }
         }
     }

@@ -57,7 +57,6 @@ fun MyAppScreen(
                     "MyAppScreen: Success: $state, setting questionList"
                 )
                 questionListViewModel.setQuestionList(state.questionList)
-                questionListViewModel.clearApiState()
                 Navigator.navigateTo(Screens.WeekQuestionsScreen)
             }
             is ApiState.Sleep, is ApiState.Loading -> {

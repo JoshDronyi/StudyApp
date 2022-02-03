@@ -195,6 +195,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                     )
                     _loginScreenContract.value.screenState.apiState =
                         ApiState.Success.UserApiSuccess(user)
+                    _loginScreenContract.value.screenState.currentUser = user
                     if (Navigator.currentScreen.value != Screens.MainScreen) {
                         Navigator.navigateTo(Screens.MainScreen)
                     }
@@ -296,7 +297,7 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
         _loginScreenContract.value = _loginScreenContract.value.copy(screenSideEffects = effect)
     }
 
-    fun setEvent(event: Events.LoginScreenEvents) {
+    fun setLoginEvent(event: Events.LoginScreenEvents) {
         _loginScreenContract.value = _loginScreenContract.value.copy(screenEvent = event)
     }
 }

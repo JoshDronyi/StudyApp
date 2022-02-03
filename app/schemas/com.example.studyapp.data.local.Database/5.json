@@ -1,0 +1,126 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "0fd78218add88229db4865e7c8641a43",
+    "entities": [
+      {
+        "tableName": "Question",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `questionNumber` TEXT NOT NULL, `questionText` TEXT NOT NULL, `correctAnswer` TEXT NOT NULL, `answer1` TEXT NOT NULL, `answer2` TEXT NOT NULL, `answer3` TEXT NOT NULL, `topic` TEXT NOT NULL, `questionStatus` TEXT NOT NULL, `week` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "questionNumber",
+            "columnName": "questionNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "questionText",
+            "columnName": "questionText",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctAnswer",
+            "columnName": "correctAnswer",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answer1",
+            "columnName": "answer1",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answer2",
+            "columnName": "answer2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answer3",
+            "columnName": "answer3",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "topic",
+            "columnName": "topic",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "questionStatus",
+            "columnName": "questionStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "week",
+            "columnName": "week",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "StudentProgress",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`week` INTEGER NOT NULL, `totalQuestions` INTEGER NOT NULL, `answeredQuestions` INTEGER NOT NULL, `correctAnswers` INTEGER NOT NULL, PRIMARY KEY(`week`))",
+        "fields": [
+          {
+            "fieldPath": "week",
+            "columnName": "week",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalQuestions",
+            "columnName": "totalQuestions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "answeredQuestions",
+            "columnName": "answeredQuestions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "correctAnswers",
+            "columnName": "correctAnswers",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "week"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0fd78218add88229db4865e7c8641a43')"
+    ]
+  }
+}

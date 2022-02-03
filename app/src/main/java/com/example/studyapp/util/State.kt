@@ -32,7 +32,7 @@ sealed class State {
             var validEmail: Boolean = true,
             var validPassword: Boolean = true,
             var apiState: ApiState<*> = ApiState.Sleep,
-            val currentUser: User = User.newBlankInstance()
+            var currentUser: User = User.newBlankInstance()
         ) : ScreenState()
 
         data class HomeScreenState(
@@ -46,7 +46,8 @@ sealed class State {
         ) : ScreenState()
 
         data class QuestionScreenState(
-            val currentQuestion: Question
+            val currentQuestion: Question,
+            var questionList: List<Question>
         ) : ScreenState()
     }
 

@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 data class Question(
     @PrimaryKey
     var id: String = "",
-    val questionNumber: String = "0",
+    var questionNumber: String = "0",
     var questionText: String = "",
     var correctAnswer: String = "",
     var answer1: String = "",

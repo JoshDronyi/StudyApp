@@ -42,7 +42,7 @@ const val TAG = "WEEK_QUESTIONS_SCREEN"
 @Composable
 fun QuestionListScreen(
     userViewModel: UserViewModel = viewModel(),
-    questionListViewModel: QuestionListViewModel = viewModel()
+    questionListViewModel: QuestionListViewModel = viewModel(),
 ) {
     val questionListContract by questionListViewModel.questionListContract.collectAsState()
     val loginContract by userViewModel.loginScreenContract.collectAsState()
@@ -79,6 +79,8 @@ fun WeekQuestions(
     onAddNewQuestionSelect: () -> Unit,
     onQuestionSelected: (Question) -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .padding(24.dp)
@@ -100,8 +102,6 @@ fun WeekQuestions(
                 .height(16.dp)
         )
 
-        val context = LocalContext.current
-
         Box {
             Surface(
                 elevation = 8.dp,
@@ -116,6 +116,7 @@ fun WeekQuestions(
                 ) {
                     items(questions.count()) { questionIndex ->
                         val question = questions[questionIndex]
+                        question.questionNumber = questionIndex.toString()
                         Log.e(
                             TAG,
                             "Week Questions  was \n Text:${question.questionText} \n ans:${question.correctAnswer} \n count: ${questions.count()}"
@@ -142,7 +143,7 @@ fun WeekQuestions(
             }
 
             user?.role?.let { role ->
-                if (role == "student") {
+                if (role == "admin") {
                     FloatingActionButton(
                         onClick = {
                             Toast.makeText(

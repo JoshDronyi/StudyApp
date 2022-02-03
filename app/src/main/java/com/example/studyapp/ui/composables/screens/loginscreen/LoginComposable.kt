@@ -39,41 +39,11 @@ fun LoginScreen(
     Log.e(TAG, "LoginScreen: drawing Login Screen")
     val loginContract by userViewModel.loginScreenContract.collectAsState(initial = LoginContract())
 
-    when (val event = loginContract.screenSideEffects) {
-        is LoginScreenSideEffects.SetLoginType -> {
-            when (event.signInMethod) {
-                SignInOptions.EMAIL_PASSWORD -> userViewModel.changeLoginMethod(event.signInMethod)
-                else -> {
-                    Log.e(
-                        TAG,
-                        "LoginScreen: the signIn method given was ${event.signInMethod}",
-                    )
-                }
-            }
-        }
-        is LoginScreenSideEffects.EmailLoginAttempt -> {
-            //called when error dialog OK button is clicked.
-            userViewModel.onLoginAttempt(
-                SignInOptions.EMAIL_PASSWORD,
-                event.email,
-                event.password,
-            )
-        }
-        is LoginScreenSideEffects.ClearError -> {
-            userViewModel.clearLoginError()
-        }
-        is LoginScreenSideEffects.ToggleItems -> {
-            userViewModel.toggleItems(event.toggleable, event.verification)
-        }
-        is LoginScreenSideEffects.OnSignUpAttempt -> {
-            userViewModel.onSignUpAttempt(
-                event.newUser,
-                event.passwordText,
-                event.verifyPWText,
-                event.context
-            )
-        }
-    }
+    val sideEffect by rememberUpdatedState(newValue = loginContract.screenSideEffects)
+    val theEvent by rememberUpdatedState(newValue = loginContract.screenEvent)
+
+    handleSideEffect(sideEffect, userViewModel)
+    handleLoginEvent(theEvent, userViewModel)
 
 
     LoginScreenContent(
@@ -83,65 +53,111 @@ fun LoginScreen(
             TAG,
             "LoginScreen: sign in method is ${loginContract.screenState.signInOption}"
         )
-        userViewModel.setEvent(event)
-        when (event) {
-            is LoginScreenEvents.onLoginMethodSwitch -> {
-                when (event.signInMethod) {
-                    SignInOptions.EMAIL_PASSWORD -> {
-                        Log.e(
-                            TAG,
-                            "LoginScreen: setting the login method value from -> ${event.signInMethod}"
-                        )
+        userViewModel.setLoginEvent(event)
+    }
+}
 
-                        userViewModel.setSideEffect(LoginScreenSideEffects.SetLoginType(event.signInMethod))
-
-                    }
-                    else -> {
-                        Log.e(
-                            TAG,
-                            "LoginScreen: Different type of onLoginMethodSwitch event was required. Current: ${event.signInMethod}"
-                        )
-                    }
+@ExperimentalCoroutinesApi
+@DelicateCoroutinesApi
+@InternalCoroutinesApi
+fun handleSideEffect(sideEffect: LoginScreenSideEffects, userViewModel: UserViewModel) {
+    when (sideEffect) {
+        is LoginScreenSideEffects.SetLoginType -> {
+            when (sideEffect.signInMethod) {
+                SignInOptions.EMAIL_PASSWORD -> userViewModel.changeLoginMethod(sideEffect.signInMethod)
+                else -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: the signIn method given was ${sideEffect.signInMethod}",
+                    )
                 }
+            }
+        }
+        is LoginScreenSideEffects.EmailLoginAttempt -> {
+            //called when error dialog OK button is clicked.
+            userViewModel.onLoginAttempt(
+                SignInOptions.EMAIL_PASSWORD,
+                sideEffect.email,
+                sideEffect.password,
+            )
+        }
+        is LoginScreenSideEffects.ClearError -> {
+            userViewModel.clearLoginError()
+        }
+        is LoginScreenSideEffects.ToggleItems -> {
+            userViewModel.toggleItems(sideEffect.toggleable, sideEffect.verification)
+        }
+        is LoginScreenSideEffects.OnSignUpAttempt -> {
+            userViewModel.onSignUpAttempt(
+                sideEffect.newUser,
+                sideEffect.passwordText,
+                sideEffect.verifyPWText,
+                sideEffect.context
+            )
+        }
+    }
+}
 
-            }
-            is LoginScreenEvents.onEmailLoginAttempt -> {
-                Log.e(
-                    TAG,
-                    "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
-                )
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.EmailLoginAttempt(
-                        event.email,
-                        event.password
+@ExperimentalCoroutinesApi
+@DelicateCoroutinesApi
+@InternalCoroutinesApi
+fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
+    when (event) {
+        is LoginScreenEvents.onLoginMethodSwitch -> {
+            when (event.signInMethod) {
+                SignInOptions.EMAIL_PASSWORD -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: setting the login method value from -> ${event.signInMethod}"
                     )
-                )
-            }
-            is LoginScreenEvents.onClearError -> {
-                Log.e(TAG, "LoginScreen: Clearing previous error.")
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.ClearError
-                )
-            }
-            is LoginScreenEvents.onToggleOption -> {
-                Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.ToggleItems(
-                        event.toggleable,
-                        event.verification
+
+                    userViewModel.setSideEffect(LoginScreenSideEffects.SetLoginType(event.signInMethod))
+                }
+                else -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: Different type of onLoginMethodSwitch event was required. Current: ${event.signInMethod}"
                     )
+                }
+            }
+
+        }
+        is LoginScreenEvents.onEmailLoginAttempt -> {
+            Log.e(
+                TAG,
+                "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
+            )
+            userViewModel.setSideEffect(
+                LoginScreenSideEffects.EmailLoginAttempt(
+                    event.email,
+                    event.password
                 )
-            }
-            is LoginScreenEvents.onSignUpAttempt -> {
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.OnSignUpAttempt(
-                        event.newUser, event.passwordText, event.verifyPWText, event.context
-                    )
+            )
+        }
+        is LoginScreenEvents.onClearError -> {
+            Log.e(TAG, "LoginScreen: Clearing previous error.")
+            userViewModel.setSideEffect(
+                LoginScreenSideEffects.ClearError
+            )
+        }
+        is LoginScreenEvents.onToggleOption -> {
+            Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
+            userViewModel.setSideEffect(
+                LoginScreenSideEffects.ToggleItems(
+                    event.toggleable,
+                    event.verification
                 )
-            }
-            else -> {
-                Log.e(TAG, "LoginScreen: event = $event")
-            }
+            )
+        }
+        is LoginScreenEvents.onSignUpAttempt -> {
+            userViewModel.setSideEffect(
+                LoginScreenSideEffects.OnSignUpAttempt(
+                    event.newUser, event.passwordText, event.verifyPWText, event.context
+                )
+            )
+        }
+        else -> {
+            Log.e(TAG, "LoginScreen: event = $event")
         }
     }
 }
