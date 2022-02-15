@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.model.User
@@ -26,7 +27,6 @@ import com.example.studyapp.ui.composables.sharedcomposables.ProgressBanner
 import com.example.studyapp.ui.composables.sharedcomposables.QuestionCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
-import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
 import com.example.studyapp.util.Screens
 import com.example.studyapp.util.generateStudentProgress
@@ -41,8 +41,9 @@ const val TAG = "WEEK_QUESTIONS_SCREEN"
 @ExperimentalCoroutinesApi
 @Composable
 fun QuestionListScreen(
+    navController: NavController,
     userViewModel: UserViewModel = viewModel(),
-    questionListViewModel: QuestionListViewModel = viewModel()
+    questionListViewModel: QuestionListViewModel = viewModel(),
 ) {
     val questionListContract by questionListViewModel.questionListContract.collectAsState()
     val loginContract by userViewModel.loginScreenContract.collectAsState()
@@ -54,20 +55,18 @@ fun QuestionListScreen(
                 progress = progress,
                 currentWeek = currentWeek,
                 user = loginContract.screenState.currentUser,
-                onAddNewQuestionSelect = ::newQuestionSelect
+                onAddNewQuestionSelect = {
+                    navController.navigate(Screens.NewQuestionScreen.route)
+                }
             ) { question ->
                 questionListViewModel.setCurrentQuestion(question)
-                Navigator.navigateTo(Screens.QuestionScreen)
+                navController.navigate(Screens.QuestionScreen.route)
             }
             questionListViewModel.setCurrentProgress(
                 questionList.generateStudentProgress()
             )
         }
     }
-}
-
-private fun newQuestionSelect() {
-    Navigator.navigateTo(Screens.NewQuestionScreen)
 }
 
 @Composable
@@ -79,6 +78,8 @@ fun WeekQuestions(
     onAddNewQuestionSelect: () -> Unit,
     onQuestionSelected: (Question) -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .padding(24.dp)
@@ -100,8 +101,6 @@ fun WeekQuestions(
                 .height(16.dp)
         )
 
-        val context = LocalContext.current
-
         Box {
             Surface(
                 elevation = 8.dp,
@@ -116,6 +115,7 @@ fun WeekQuestions(
                 ) {
                     items(questions.count()) { questionIndex ->
                         val question = questions[questionIndex]
+                        question.questionNumber = questionIndex.toString()
                         Log.e(
                             TAG,
                             "Week Questions  was \n Text:${question.questionText} \n ans:${question.correctAnswer} \n count: ${questions.count()}"
@@ -142,7 +142,7 @@ fun WeekQuestions(
             }
 
             user?.role?.let { role ->
-                if (role == "student") {
+                if (role == "admin") {
                     FloatingActionButton(
                         onClick = {
                             Toast.makeText(

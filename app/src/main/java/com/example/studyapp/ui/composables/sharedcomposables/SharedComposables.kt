@@ -20,13 +20,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.annotation.ExperimentalCoilApi
@@ -264,34 +262,3 @@ fun DrawerImage(
         Text(text = description)
     }
 }
-
-
-@Composable
-fun BaseAlertDialog(
-    title: String = "Alert!",
-    text: String,
-    screen: Screens = Screens.MainScreen
-) {
-    val shouldShowDialog = remember { mutableStateOf(true) }
-    if (shouldShowDialog.value) {
-        AlertDialog(
-            onDismissRequest = {
-                shouldShowDialog.value = false
-                Navigator.navigateTo(screen)
-            },
-            title = { Text(text = title) },
-            text = { Text(text = text) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        shouldShowDialog.value = false
-                        Navigator.navigateTo(screen)
-                    }
-                ) {
-                    Text(text = "Confirm")
-                }
-            }
-        )
-    }
-}
-

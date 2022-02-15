@@ -8,7 +8,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,10 +15,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
-import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -28,6 +27,7 @@ import kotlinx.coroutines.launch
 @ExperimentalCoroutinesApi
 @Composable
 fun QuestionScreen(
+    navContrller: NavController,
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val tag = "QUESTIONSCREEN"
@@ -43,7 +43,7 @@ fun QuestionScreen(
             scope.launch {
                 Log.e(tag, "Question Screen: last question has been answered.")
                 questionListViewModel.clearApiState()
-                Navigator.navigateUp()
+                navContrller.navigateUp()
             }
         }
     }
@@ -170,11 +170,11 @@ private fun checkButtonAnswer(
     questionListViewModel: QuestionListViewModel
 ): Boolean {
     if (text == question.correctAnswer) {
-        questionListViewModel.updateQuestionStatus(question.apply {
+        questionListViewModel.saveQuestionInDB(question.apply {
             questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal.toString()
         })
     } else {
-        questionListViewModel.updateQuestionStatus(question.apply {
+        questionListViewModel.saveQuestionInDB(question.apply {
             questionStatus = QuestionStatus.WRONG_ANSWER.ordinal.toString()
         })
     }

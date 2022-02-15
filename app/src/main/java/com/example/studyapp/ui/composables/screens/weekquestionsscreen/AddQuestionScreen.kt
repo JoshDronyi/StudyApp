@@ -21,13 +21,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.util.MAX_SPACER_HEIGHT
 import com.example.studyapp.util.MIN_SPACER_HEIGHT
-import com.example.studyapp.util.Navigator
 
 @Composable
-fun NewQuestionScreen(onQuestionAdded: (week: String, question: Question) -> Unit) {
+fun NewQuestionScreen(
+    navController: NavController,
+    onQuestionAdded: (week: String, question: Question) -> Unit
+) {
     val context = LocalContext.current
     var topic = ""
     var week = ""
@@ -153,7 +157,7 @@ fun NewQuestionScreen(onQuestionAdded: (week: String, question: Question) -> Uni
 
         Row(Modifier.padding(8.dp)) {
 
-            Button(onClick = { Navigator.navigateUp() }) {
+            Button(onClick = { navController.navigateUp() }) {
                 Text(text = "Cancel")
             }
 
@@ -175,8 +179,6 @@ fun NewQuestionScreen(onQuestionAdded: (week: String, question: Question) -> Uni
                     .show()
 
                 onQuestionAdded.invoke(week, newQuestion)
-                Navigator.navigateUp()
-
             }) {
                 Text(text = "Add Question.")
             }
@@ -209,7 +211,7 @@ fun TextInput(
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
 fun NewQuestionPreview() {
-    NewQuestionScreen { _, _ ->
+    NewQuestionScreen(rememberNavController()) { _, _ ->
 
     }
 }

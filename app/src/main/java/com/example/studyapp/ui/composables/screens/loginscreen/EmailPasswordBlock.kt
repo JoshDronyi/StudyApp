@@ -65,7 +65,7 @@ fun EmailPasswordBlock(
                         }
 
                         onClick.invoke(
-                            LoginScreenEvents.onValidationError(
+                            LoginScreenEvents.OnValidationError(
                                 loginScreenState.error,
                                 emailValue
                             )
@@ -87,7 +87,7 @@ fun EmailPasswordBlock(
                             )
                         }
                         onClick.invoke(
-                            LoginScreenEvents.onValidationError(
+                            LoginScreenEvents.OnValidationError(
                                 loginScreenState.error,
                                 passwordValue
                             )
@@ -102,7 +102,7 @@ fun EmailPasswordBlock(
                                 "Sign in button clicked with valid email:$emailValue and password:$passwordValue"
                             )
                             onClick.invoke(
-                                LoginScreenEvents.onEmailLoginAttempt(
+                                LoginScreenEvents.OnEmailLoginAttempt(
                                     loginScreenState.email,
                                     loginScreenState.password
                                 )
@@ -125,7 +125,7 @@ fun EmailPasswordBlock(
             modifier = Modifier.clickable {
                 onClick.invoke(
                     LoginScreenEvents
-                        .onToggleOption(
+                        .OnToggleOption(
                             Toggleable.VERIFICATION, VerificationOptions.SIGN_UP
                         )
                 )

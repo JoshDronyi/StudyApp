@@ -83,7 +83,7 @@ fun verifyText(
 
 fun List<Question>.generateStudentProgress(): StudentProgress {
     return StudentProgress(
-        week = get(0).week.toInt(),
+        week = get(0).week.last().digitToInt(),
         totalQuestions = size,
         answeredQuestions = count { it.questionStatus != QuestionStatus.NOT_ANSWERED.ordinal.toString() },
         correctAnswers = count { it.questionStatus == QuestionStatus.CORRECT_ANSWER.ordinal.toString() }
@@ -121,11 +121,11 @@ fun returnSnapShotAsQuestionList(snapshot: DataSnapshot, week: String): List<Que
     snapshot.children.forEach { questionData ->
         Log.e(
             TAG,
-            "onDataChange: snapshot was Key:${questionData.key}, value: ${questionData.value}"
+            "returnSnapShotAsQuestionList: snapshot was Key:${questionData.key}, value: ${questionData.value}"
         )
         val question = Question().apply {
             this.id = questionData.key.toString()
-            this.week = week.last().toString()
+            this.week = week
         }
         questionData.getValue<Map<String, String>>()?.let { data ->
             questions.add(

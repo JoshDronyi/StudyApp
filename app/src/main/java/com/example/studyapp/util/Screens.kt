@@ -10,8 +10,8 @@ private const val NEW_QUESTION_SCREEN = "newQuestion"
 
 sealed class Screens(val route: String = "") {
     object LoginScreen : Screens(LOGIN_SCREEN)
-    object MainScreen : Screens(MAIN_SCREEN)
-    object WeekQuestionsScreen : Screens(WEEK_QUESTION_SCREEN)
+    object HomeScreen : Screens(MAIN_SCREEN)
+    object QuestionListScreen : Screens(WEEK_QUESTION_SCREEN)
     object QuestionScreen : Screens(QUESTION_SCREEN)
     object SettingsScreen : Screens(SETTINGS_SCREEN)
     object ProfileScreen : Screens(PROFILE_SCREEN)

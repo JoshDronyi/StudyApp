@@ -11,17 +11,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.R
 import com.example.studyapp.ui.composables.screen_contracts.LoginContract
 import com.example.studyapp.ui.composables.sharedcomposables.ErrorDialog
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.UserViewModel
-import com.example.studyapp.util.ErrorType
+import com.example.studyapp.util.*
 import com.example.studyapp.util.Events.LoginScreenEvents
 import com.example.studyapp.util.SideEffects.LoginScreenSideEffects
-import com.example.studyapp.util.SignInOptions
+import com.example.studyapp.util.SideEffects.LoginScreenSideEffects.*
 import com.example.studyapp.util.State.ScreenState.LoginScreenState
-import com.example.studyapp.util.VerificationOptions
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -34,114 +34,147 @@ const val TAG = "LoginScreen"
 @InternalCoroutinesApi
 @Composable
 fun LoginScreen(
+    navController: NavController,
     userViewModel: UserViewModel = viewModel()
 ) {
     Log.e(TAG, "LoginScreen: drawing Login Screen")
     val loginContract by userViewModel.loginScreenContract.collectAsState(initial = LoginContract())
 
-    when (val event = loginContract.screenSideEffects) {
-        is LoginScreenSideEffects.SetLoginType -> {
-            when (event.signInMethod) {
-                SignInOptions.EMAIL_PASSWORD -> userViewModel.changeLoginMethod(event.signInMethod)
-                else -> {
-                    Log.e(
-                        TAG,
-                        "LoginScreen: the signIn method given was ${event.signInMethod}",
-                    )
-                }
-            }
-        }
-        is LoginScreenSideEffects.EmailLoginAttempt -> {
-            //called when error dialog OK button is clicked.
-            userViewModel.onLoginAttempt(
-                SignInOptions.EMAIL_PASSWORD,
-                event.email,
-                event.password,
-            )
-        }
-        is LoginScreenSideEffects.ClearError -> {
-            userViewModel.clearLoginError()
-        }
-        is LoginScreenSideEffects.ToggleItems -> {
-            userViewModel.toggleItems(event.toggleable, event.verification)
-        }
-        is LoginScreenSideEffects.OnSignUpAttempt -> {
-            userViewModel.onSignUpAttempt(
-                event.newUser,
-                event.passwordText,
-                event.verifyPWText,
-                event.context
-            )
-        }
+    val sideEffect by rememberUpdatedState(newValue = loginContract.screenSideEffects)
+    val theEvent by rememberUpdatedState(newValue = loginContract.screenEvent)
+
+    LaunchedEffect(sideEffect, theEvent) {
+        handleSideEffect(navController, sideEffect, userViewModel)
+        handleLoginEvent(theEvent, userViewModel)
     }
 
 
     LoginScreenContent(
+        navController,
         loginContract.screenState,
     ) { event ->
         Log.e(
             TAG,
             "LoginScreen: sign in method is ${loginContract.screenState.signInOption}"
         )
-        userViewModel.setEvent(event)
-        when (event) {
-            is LoginScreenEvents.onLoginMethodSwitch -> {
-                when (event.signInMethod) {
-                    SignInOptions.EMAIL_PASSWORD -> {
-                        Log.e(
-                            TAG,
-                            "LoginScreen: setting the login method value from -> ${event.signInMethod}"
-                        )
+        userViewModel.setLoginEvent(event)
+    }
+}
 
-                        userViewModel.setSideEffect(LoginScreenSideEffects.SetLoginType(event.signInMethod))
+@ExperimentalCoroutinesApi
+@DelicateCoroutinesApi
+@InternalCoroutinesApi
+fun handleSideEffect(
+    navController: NavController,
+    sideEffect: LoginScreenSideEffects,
+    userViewModel: UserViewModel
+) {
 
-                    }
-                    else -> {
-                        Log.e(
-                            TAG,
-                            "LoginScreen: Different type of onLoginMethodSwitch event was required. Current: ${event.signInMethod}"
-                        )
-                    }
+    when (sideEffect) {
+        is SetLoginType -> {
+            when (sideEffect.signInMethod) {
+                SignInOptions.EMAIL_PASSWORD -> userViewModel.changeLoginMethod(sideEffect.signInMethod)
+                else -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: the signIn method given was ${sideEffect.signInMethod}",
+                    )
                 }
+            }
+        }
+        is EmailLoginAttempt -> {
+            //called when error dialog OK button is clicked.
+            userViewModel.onLoginAttempt(
+                SignInOptions.EMAIL_PASSWORD,
+                sideEffect.email,
+                sideEffect.password,
+            )
+        }
+        is ClearError -> {
+            userViewModel.setLoginError()
+        }
+        is ToggleItems -> {
+            userViewModel.toggleItems(sideEffect.toggleable, sideEffect.verification)
+        }
+        is OnSignUpAttempt -> {
+            userViewModel.onSignUpAttempt(
+                sideEffect.newUser,
+                sideEffect.passwordText,
+                sideEffect.verifyPWText,
+                sideEffect.context
+            )
+        }
+        is Navigate -> {
+            navController.navigate(sideEffect.target.route) {
+                launchSingleTop = true
+            }
+        }
+    }
+}
 
-            }
-            is LoginScreenEvents.onEmailLoginAttempt -> {
-                Log.e(
-                    TAG,
-                    "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
-                )
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.EmailLoginAttempt(
-                        event.email,
-                        event.password
+@ExperimentalCoroutinesApi
+@DelicateCoroutinesApi
+@InternalCoroutinesApi
+fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
+    when (event) {
+        is LoginScreenEvents.OnLoginMethodSwitch -> {
+            when (event.signInMethod) {
+                SignInOptions.EMAIL_PASSWORD -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: setting the login method value from -> ${event.signInMethod}"
                     )
-                )
-            }
-            is LoginScreenEvents.onClearError -> {
-                Log.e(TAG, "LoginScreen: Clearing previous error.")
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.ClearError
-                )
-            }
-            is LoginScreenEvents.onToggleOption -> {
-                Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.ToggleItems(
-                        event.toggleable,
-                        event.verification
+
+                    userViewModel.setSideEffect(SetLoginType(event.signInMethod))
+                }
+                else -> {
+                    Log.e(
+                        TAG,
+                        "LoginScreen: Different type of onLoginMethodSwitch event was required. Current: ${event.signInMethod}"
                     )
+                }
+            }
+
+        }
+        is LoginScreenEvents.OnEmailLoginAttempt -> {
+            Log.e(
+                TAG,
+                "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
+            )
+            userViewModel.setSideEffect(
+                EmailLoginAttempt(
+                    event.email,
+                    event.password
                 )
-            }
-            is LoginScreenEvents.onSignUpAttempt -> {
-                userViewModel.setSideEffect(
-                    LoginScreenSideEffects.OnSignUpAttempt(
-                        event.newUser, event.passwordText, event.verifyPWText, event.context
-                    )
+            )
+        }
+        is LoginScreenEvents.OnClearError -> {
+            Log.e(TAG, "LoginScreen: Clearing previous error.")
+            userViewModel.setSideEffect(
+                ClearError
+            )
+        }
+        is LoginScreenEvents.OnToggleOption -> {
+            Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
+            userViewModel.setSideEffect(
+                ToggleItems(
+                    event.toggleable,
+                    event.verification
                 )
-            }
-            else -> {
-                Log.e(TAG, "LoginScreen: event = $event")
-            }
+            )
+        }
+        is LoginScreenEvents.OnSignUpAttempt -> {
+            userViewModel.setSideEffect(
+                OnSignUpAttempt(
+                    event.newUser, event.passwordText, event.verifyPWText, event.context
+                )
+            )
+        }
+        is LoginScreenEvents.OnComplete -> {
+            Log.e(TAG, "handleLoginEvent: Navgating to Home Screen")
+            userViewModel.setSideEffect(
+                Navigate(Screens.HomeScreen)
+            )
         }
     }
 }
@@ -152,6 +185,7 @@ fun LoginScreen(
 @InternalCoroutinesApi
 @Composable
 fun LoginScreenContent(
+    navController: NavController,
     loginScreenState: LoginScreenState,
     onEventOccurred: (event: LoginScreenEvents) -> Unit,
 ) {
@@ -206,24 +240,26 @@ fun LoginScreenContent(
                         ErrorType.LOGIN -> {
                             Log.e(TAG, "LoginScreenContent: Error with login data.")
                             ErrorDialog(
+                                navController = navController,
                                 data = this,
                                 title = LocalContext.current.getString(
                                     R.string.errorMessage,
                                     "Login"
                                 ),
                                 shouldShow = error.shouldShow
-                            ) { onEventOccurred.invoke(LoginScreenEvents.onClearError) }
+                            ) { onEventOccurred.invoke(LoginScreenEvents.OnClearError) }
                         }
                         ErrorType.NETWORK -> {
                             Log.e(TAG, "LoginScreenContent: Network Error occurred.")
                             ErrorDialog(
+                                navController = navController,
                                 data = this,
                                 title = LocalContext.current.getString(
                                     R.string.errorMessage,
                                     "Network"
                                 ),
                                 shouldShow = error.shouldShow
-                            ) { onEventOccurred.invoke(LoginScreenEvents.onClearError) }
+                            ) { onEventOccurred.invoke(LoginScreenEvents.OnClearError) }
                         }
                         else -> {
                             Log.e(
