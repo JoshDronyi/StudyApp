@@ -8,7 +8,7 @@ data class LoginContract(
     var screenState: LoginScreenState =
         LoginScreenState(),
     var screenEvent: LoginScreenEvents =
-        LoginScreenEvents(),
+        LoginScreenEvents.OnStart,
     var screenSideEffects: LoginScreenSideEffects = LoginScreenSideEffects()
 )
 

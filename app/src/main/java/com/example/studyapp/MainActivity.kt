@@ -5,19 +5,29 @@ import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.animation.*
-import androidx.compose.material.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.material.DrawerValue
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.rememberScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.NavigatorState
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import coil.annotation.ExperimentalCoilApi
 import com.example.studyapp.ui.composables.screens.currentquestionscreen.QuestionScreen
-import com.example.studyapp.ui.composables.screens.homescreen.MyAppScreen
+import com.example.studyapp.ui.composables.screens.homescreen.HomeScreen
 import com.example.studyapp.ui.composables.screens.loginscreen.LoginScreen
 import com.example.studyapp.ui.composables.screens.settingscreens.ProfileScreen
 import com.example.studyapp.ui.composables.screens.weekquestionsscreen.NewQuestionScreen
@@ -27,9 +37,13 @@ import com.example.studyapp.ui.composables.sharedcomposables.StudyTopAppBar
 import com.example.studyapp.ui.theme.StudyAppTheme
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
-import com.example.studyapp.util.*
+import com.example.studyapp.util.ButtonOptions
+import com.example.studyapp.util.Screens.*
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.launch
 
 @DelicateCoroutinesApi
 @ExperimentalAnimationApi
@@ -39,14 +53,17 @@ import kotlinx.coroutines.*
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val userViewModel: UserViewModel by viewModels()
+    private val questionListViewModel: QuestionListViewModel by viewModels()
     private val tag = "MainActivity"
+
+    private lateinit var navController: NavHostController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             StudyAppTheme {
-                AppNavigator(userViewModel)
+                AppNavigator(userViewModel, questionListViewModel)
             }
         }
     }
@@ -58,12 +75,16 @@ class MainActivity : AppCompatActivity() {
     ) {
         val scope = rememberCoroutineScope()
         val state = rememberScaffoldState()
+        navController = rememberNavController()
+
+
         val loginContract by userViewModel.loginScreenContract.collectAsState()
 
         Scaffold(
             backgroundColor = MaterialTheme.colors.background,
             drawerContent = {
                 NavDrawer(
+                    navController,
                     user = loginContract.screenState.currentUser
                 ) { shouldClose ->
                     scope.launch {
@@ -81,7 +102,7 @@ class MainActivity : AppCompatActivity() {
             topBar = {
                 StudyTopAppBar(
                     text = this@MainActivity.tag,
-                    destination = Navigator.currentScreen.value,
+                    navController = navController,
                     state = state,
                     onMenuClick = { options, isOpen ->
                         onMenuClick(options, isOpen) {
@@ -102,41 +123,31 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         ) {
-            Log.e(tag, "AppNavigator: Current screen is ${Navigator.currentScreen}")
-            Crossfade(targetState = Navigator.currentScreen) { screenState ->
-                when (screenState.value) {
-                    is Screens.LoginScreen -> {
-                        LoginScreen(userViewModel)
-                    }
-                    is Screens.MainScreen -> {
-                        MyAppScreen(
-                            questionListViewModel = questionListVM
-                        )
-                    }
-                    is Screens.WeekQuestionsScreen -> {
-                        QuestionListScreen(userViewModel)
-                    }
-                    is Screens.QuestionScreen -> {
-                        QuestionScreen()
-                    }
-                    is Screens.ProfileScreen -> {
-                        ProfileScreen()
-                    }
-                    is Screens.NewQuestionScreen -> {
-                        NewQuestionScreen { week, question ->
-                            Log.e(tag, "AppNavigator: Question was $question for week $week")
-                            questionListVM.addNewQuestion(week, question)
-                            Navigator.navigateUp()
-                        }
-                    }
-                    else -> {
-                        Log.e(
-                            tag,
-                            "AppNavigator: into the Crossfade else branch ${screenState.value}"
-                        )
+            Log.e(tag, "AppNavigator: Current screen is ${navController.currentDestination?.route}")
+            NavHost(navController = navController, startDestination = LoginScreen.route) {
+                composable(LoginScreen.route) { LoginScreen(navController, userViewModel) }
+                composable(HomeScreen.route) { HomeScreen(navController, questionListViewModel) }
+                composable(QuestionListScreen.route) {
+                    QuestionListScreen(
+                        navController,
+                        userViewModel,
+                        questionListViewModel
+                    )
+                }
+                composable(QuestionScreen.route) {
+                    QuestionScreen(
+                        navController,
+                        questionListViewModel
+                    )
+                }
+                composable(ProfileScreen.route) { ProfileScreen(userViewModel) }
+                composable(NewQuestionScreen.route) {
+                    NewQuestionScreen(navController) { week, question ->
+                        Log.e(tag, "AppNavigator: Question was $question for week $week")
+                        questionListVM.addNewQuestion(week, question)
+                        navController.navigateUp()
                     }
                 }
-
             }
         }
     }
@@ -148,13 +159,15 @@ class MainActivity : AppCompatActivity() {
     ) {
         when (option) {
             ButtonOptions.BACK -> {
-                Navigator.navigateUp()
+                navController.navigateUp()
             }
             ButtonOptions.MENU -> {
                 onDrawerToggle.invoke(isOpen)
             }
             ButtonOptions.SETTINGS -> {
-                Navigator.navigateTo(Screens.SettingsScreen)
+                navController.navigate(SettingsScreen.route) {
+                    launchSingleTop = true
+                }
             }
         }
     }

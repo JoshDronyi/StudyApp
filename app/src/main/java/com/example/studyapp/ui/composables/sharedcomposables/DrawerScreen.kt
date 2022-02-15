@@ -10,17 +10,17 @@ import androidx.compose.material.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 import coil.annotation.ExperimentalCoilApi
 import com.example.studyapp.R
 import com.example.studyapp.data.model.User
 import com.example.studyapp.util.DrawerOptions
-import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.Screens
-import com.example.studyapp.util.State.ApiState
 
 @ExperimentalCoilApi
 @Composable
 fun NavDrawer(
+    navController: NavController,
     user: User?,
     shouldCloseDrawer: (shouldClose: Boolean) -> Unit,
 ) {
@@ -47,28 +47,31 @@ fun NavDrawer(
         Divider()
         DrawerItem(text = DrawerOptions.HOME) {
             shouldCloseDrawer.invoke(true)
-            handleDrawerSelection(it, context)
+            handleDrawerSelection(navController, it, context)
         }
         Divider()
         DrawerItem(text = DrawerOptions.SCOREBOARD) {
             shouldCloseDrawer.invoke(true)
-            handleDrawerSelection(it, context)
+            handleDrawerSelection(navController, it, context)
         }
         Divider()
         DrawerItem(text = DrawerOptions.PROFILE) {
             shouldCloseDrawer.invoke(true)
-            handleDrawerSelection(it, context)
+            handleDrawerSelection(navController, it, context)
         }
     }
 }
 
-private fun handleDrawerSelection(option: DrawerOptions, context: Context) {
+private fun handleDrawerSelection(
+    navController: NavController,
+    option: DrawerOptions,
+    context: Context
+) {
+    val currentScreen = navController.currentBackStackEntry?.destination?.route
     when (option) {
         DrawerOptions.HOME -> {
-            Log.e(TAG, "handleDrawerSelection: MainScreen Route: ${Screens.MainScreen.route}")
-            if (Navigator.currentScreen.value.route != Screens.MainScreen.route) {
-                Navigator.navigateTo(Screens.MainScreen)
-            }
+            Log.e(TAG, "handleDrawerSelection: MainScreen Route: ${Screens.HomeScreen.route}")
+            navController.navigate(Screens.HomeScreen.route)
         }
         DrawerOptions.SCOREBOARD -> {
             Toast.makeText(
@@ -78,13 +81,8 @@ private fun handleDrawerSelection(option: DrawerOptions, context: Context) {
             ).show()
         }
         DrawerOptions.PROFILE -> {
-            Log.e(
-                TAG,
-                "handleDrawerSelection: currentScreen is ${Navigator.currentScreen.value.route}",
-            )
-            if (Navigator.currentScreen.value.route != Screens.ProfileScreen.route) {
-                Navigator.navigateTo(Screens.ProfileScreen)
-            }
+            Log.e(TAG, "handleDrawerSelection: currentScreen is $currentScreen")
+            navController.navigate(Screens.ProfileScreen.route)
         }
     }
 }

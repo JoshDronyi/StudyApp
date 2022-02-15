@@ -11,17 +11,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.R
 import com.example.studyapp.ui.composables.screen_contracts.LoginContract
 import com.example.studyapp.ui.composables.sharedcomposables.ErrorDialog
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.UserViewModel
-import com.example.studyapp.util.ErrorType
+import com.example.studyapp.util.*
 import com.example.studyapp.util.Events.LoginScreenEvents
 import com.example.studyapp.util.SideEffects.LoginScreenSideEffects
-import com.example.studyapp.util.SignInOptions
+import com.example.studyapp.util.SideEffects.LoginScreenSideEffects.*
 import com.example.studyapp.util.State.ScreenState.LoginScreenState
-import com.example.studyapp.util.VerificationOptions
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -34,6 +34,7 @@ const val TAG = "LoginScreen"
 @InternalCoroutinesApi
 @Composable
 fun LoginScreen(
+    navController: NavController,
     userViewModel: UserViewModel = viewModel()
 ) {
     Log.e(TAG, "LoginScreen: drawing Login Screen")
@@ -42,11 +43,14 @@ fun LoginScreen(
     val sideEffect by rememberUpdatedState(newValue = loginContract.screenSideEffects)
     val theEvent by rememberUpdatedState(newValue = loginContract.screenEvent)
 
-    handleSideEffect(sideEffect, userViewModel)
-    handleLoginEvent(theEvent, userViewModel)
+    LaunchedEffect(sideEffect, theEvent) {
+        handleSideEffect(navController, sideEffect, userViewModel)
+        handleLoginEvent(theEvent, userViewModel)
+    }
 
 
     LoginScreenContent(
+        navController,
         loginContract.screenState,
     ) { event ->
         Log.e(
@@ -60,9 +64,14 @@ fun LoginScreen(
 @ExperimentalCoroutinesApi
 @DelicateCoroutinesApi
 @InternalCoroutinesApi
-fun handleSideEffect(sideEffect: LoginScreenSideEffects, userViewModel: UserViewModel) {
+fun handleSideEffect(
+    navController: NavController,
+    sideEffect: LoginScreenSideEffects,
+    userViewModel: UserViewModel
+) {
+
     when (sideEffect) {
-        is LoginScreenSideEffects.SetLoginType -> {
+        is SetLoginType -> {
             when (sideEffect.signInMethod) {
                 SignInOptions.EMAIL_PASSWORD -> userViewModel.changeLoginMethod(sideEffect.signInMethod)
                 else -> {
@@ -73,7 +82,7 @@ fun handleSideEffect(sideEffect: LoginScreenSideEffects, userViewModel: UserView
                 }
             }
         }
-        is LoginScreenSideEffects.EmailLoginAttempt -> {
+        is EmailLoginAttempt -> {
             //called when error dialog OK button is clicked.
             userViewModel.onLoginAttempt(
                 SignInOptions.EMAIL_PASSWORD,
@@ -81,19 +90,24 @@ fun handleSideEffect(sideEffect: LoginScreenSideEffects, userViewModel: UserView
                 sideEffect.password,
             )
         }
-        is LoginScreenSideEffects.ClearError -> {
-            userViewModel.clearLoginError()
+        is ClearError -> {
+            userViewModel.setLoginError()
         }
-        is LoginScreenSideEffects.ToggleItems -> {
+        is ToggleItems -> {
             userViewModel.toggleItems(sideEffect.toggleable, sideEffect.verification)
         }
-        is LoginScreenSideEffects.OnSignUpAttempt -> {
+        is OnSignUpAttempt -> {
             userViewModel.onSignUpAttempt(
                 sideEffect.newUser,
                 sideEffect.passwordText,
                 sideEffect.verifyPWText,
                 sideEffect.context
             )
+        }
+        is Navigate -> {
+            navController.navigate(sideEffect.target.route) {
+                launchSingleTop = true
+            }
         }
     }
 }
@@ -103,7 +117,7 @@ fun handleSideEffect(sideEffect: LoginScreenSideEffects, userViewModel: UserView
 @InternalCoroutinesApi
 fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
     when (event) {
-        is LoginScreenEvents.onLoginMethodSwitch -> {
+        is LoginScreenEvents.OnLoginMethodSwitch -> {
             when (event.signInMethod) {
                 SignInOptions.EMAIL_PASSWORD -> {
                     Log.e(
@@ -111,7 +125,7 @@ fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
                         "LoginScreen: setting the login method value from -> ${event.signInMethod}"
                     )
 
-                    userViewModel.setSideEffect(LoginScreenSideEffects.SetLoginType(event.signInMethod))
+                    userViewModel.setSideEffect(SetLoginType(event.signInMethod))
                 }
                 else -> {
                     Log.e(
@@ -122,42 +136,45 @@ fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
             }
 
         }
-        is LoginScreenEvents.onEmailLoginAttempt -> {
+        is LoginScreenEvents.OnEmailLoginAttempt -> {
             Log.e(
                 TAG,
                 "LoginScreen: Changing to 'Email Login Attempt' screen side effect with email=${event.email}, password= ${event.password}."
             )
             userViewModel.setSideEffect(
-                LoginScreenSideEffects.EmailLoginAttempt(
+                EmailLoginAttempt(
                     event.email,
                     event.password
                 )
             )
         }
-        is LoginScreenEvents.onClearError -> {
+        is LoginScreenEvents.OnClearError -> {
             Log.e(TAG, "LoginScreen: Clearing previous error.")
             userViewModel.setSideEffect(
-                LoginScreenSideEffects.ClearError
+                ClearError
             )
         }
-        is LoginScreenEvents.onToggleOption -> {
+        is LoginScreenEvents.OnToggleOption -> {
             Log.e(TAG, "LoginScreen: toggling event toggleable ${event.toggleable}")
             userViewModel.setSideEffect(
-                LoginScreenSideEffects.ToggleItems(
+                ToggleItems(
                     event.toggleable,
                     event.verification
                 )
             )
         }
-        is LoginScreenEvents.onSignUpAttempt -> {
+        is LoginScreenEvents.OnSignUpAttempt -> {
             userViewModel.setSideEffect(
-                LoginScreenSideEffects.OnSignUpAttempt(
+                OnSignUpAttempt(
                     event.newUser, event.passwordText, event.verifyPWText, event.context
                 )
             )
         }
-        else -> {
-            Log.e(TAG, "LoginScreen: event = $event")
+        is LoginScreenEvents.OnComplete -> {
+            Log.e(TAG, "handleLoginEvent: Navgating to Home Screen")
+            userViewModel.setSideEffect(
+                Navigate(Screens.HomeScreen)
+            )
         }
     }
 }
@@ -168,6 +185,7 @@ fun handleLoginEvent(event: LoginScreenEvents, userViewModel: UserViewModel) {
 @InternalCoroutinesApi
 @Composable
 fun LoginScreenContent(
+    navController: NavController,
     loginScreenState: LoginScreenState,
     onEventOccurred: (event: LoginScreenEvents) -> Unit,
 ) {
@@ -222,24 +240,26 @@ fun LoginScreenContent(
                         ErrorType.LOGIN -> {
                             Log.e(TAG, "LoginScreenContent: Error with login data.")
                             ErrorDialog(
+                                navController = navController,
                                 data = this,
                                 title = LocalContext.current.getString(
                                     R.string.errorMessage,
                                     "Login"
                                 ),
                                 shouldShow = error.shouldShow
-                            ) { onEventOccurred.invoke(LoginScreenEvents.onClearError) }
+                            ) { onEventOccurred.invoke(LoginScreenEvents.OnClearError) }
                         }
                         ErrorType.NETWORK -> {
                             Log.e(TAG, "LoginScreenContent: Network Error occurred.")
                             ErrorDialog(
+                                navController = navController,
                                 data = this,
                                 title = LocalContext.current.getString(
                                     R.string.errorMessage,
                                     "Network"
                                 ),
                                 shouldShow = error.shouldShow
-                            ) { onEventOccurred.invoke(LoginScreenEvents.onClearError) }
+                            ) { onEventOccurred.invoke(LoginScreenEvents.OnClearError) }
                         }
                         else -> {
                             Log.e(

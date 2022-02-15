@@ -20,12 +20,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.studyapp.util.Navigator
+import androidx.navigation.NavController
 import com.example.studyapp.util.StudyAppError
 
 
 @Composable
 fun ErrorDialog(
+    navController: NavController,
     data: StudyAppError?,
     title: String,
     shouldShow: Boolean = false,
@@ -41,7 +42,7 @@ fun ErrorDialog(
         AlertDialog(
             onDismissRequest = {
                 shouldShowError.value = !shouldShow
-                Navigator.navigateTo(Navigator.currentScreen.value)
+                navController.navigateUp()
             },
             text = { Text(text = data?.message ?: DEFAULT_ERROR_MESSAGE) },
             title = { Text(text = title) },

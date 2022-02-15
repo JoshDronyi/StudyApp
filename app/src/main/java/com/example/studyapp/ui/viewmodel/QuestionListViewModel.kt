@@ -9,9 +9,11 @@ import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
+import com.example.studyapp.util.ErrorType
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
 import com.example.studyapp.util.State.ApiState
+import com.example.studyapp.util.StudyAppError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -46,7 +48,6 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
-
         Log.e(TAG, "getQuestions:  week was $week")
         setHomeScreenAPIState(ApiState.Loading)
 
@@ -75,19 +76,19 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
                         Log.e(TAG, "getQuestions: Questions from the database is not empty")
 
-                        dataFromTheInternet.questionList.forEachIndexed { index, internet ->
+                        dataFromTheInternet.questionList.forEachIndexed { index, internetQuestion ->
                             Log.e(
                                 TAG,
-                                "getQuestions: index was $index, \n questionList was ${localQuestionList[index]} \n internet was $internet "
+                                "getQuestions: index was $index, \n questionList was ${localQuestionList[index]} \n internetQuestion was $internetQuestion "
                             )
-                            if (localQuestionList.contains(internet)) {
-                                val questionIndex = localQuestionList.indexOf(internet)
-                                internet.questionStatus =
+                            if (localQuestionList.contains(internetQuestion)) {
+                                val questionIndex = localQuestionList.indexOf(internetQuestion)
+                                internetQuestion.questionStatus =
                                     localQuestionList[questionIndex].questionStatus
                             } else {
-                                unsavedQuestions.add(internet)
+                                unsavedQuestions.add(internetQuestion)
                             }
-                            finalList.add(internet)
+                            finalList.add(internetQuestion)
                         }
 
                         if (!unsavedQuestions.isNullOrEmpty()) {
@@ -122,6 +123,17 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                                 TAG,
                                 "compareRemoteQuestionSet: the question set from the internet was empty"
                             )
+                            setHomeScreenAPIState(
+                                ApiState.Error(
+                                    StudyAppError.newBlankInstance().apply {
+                                        this.data = null
+                                        this.errorType = ErrorType.NETWORK
+                                        this.message =
+                                            "There were no questions stored under this path."
+                                        this.shouldShow = true
+                                    }
+                                )
+                            )
                         }
                     }
                 }
@@ -152,13 +164,22 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     fun setQuestionList(questions: List<Question>) {
         Log.e(TAG, "setQuestionList: Setting question list to $questions")
-        _questionListContract.value.screenState.questionList = questions
+        with(_questionListContract) {
+            value = value.copy(
+                screenState = value.screenState.apply {
+                    questionList = questions
+                }
+            )
+        }
     }
 
-    fun setCurrentProgress(currentProgress: StudentProgress) {
-        _questionListContract.value.screenState.progress = currentProgress
+    fun setCurrentProgress(currentProgress: StudentProgress) = with(_questionListContract) {
+        value = value.copy(
+            screenState = value.screenState.apply {
+                progress = currentProgress
+            }
+        )
     }
-
 
     fun saveQuestionInDB(vararg question: Question) = viewModelScope.launch {
         repository.saveQuestionsInDatabase(question.asList())
@@ -182,7 +203,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
         Log.e(TAG, "setHomeScreenEvent: the event was $event")
         lateinit var sideEffect: SideEffects
         when (event) {
-            is Events.HomeScreenEvents.onWeekSelected -> {
+            is Events.HomeScreenEvents.OnWeekSelected -> {
                 _questionListContract.value.screenState.currentWeek = event.selectedWeek
                 sideEffect = SideEffects.HomeScreenSideEffects
                     .SetCurrentWeek(event.selectedWeek)
@@ -244,6 +265,5 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
         lastQuestionNumber: Int
     ): Boolean =
         currentQuestionNumber <= lastQuestionNumber
-
 
 }

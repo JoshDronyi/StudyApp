@@ -11,9 +11,7 @@ import com.example.studyapp.data.model.User
 import com.example.studyapp.data.remote.AuthDataSource
 import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.screen_contracts.LoginContract
-import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.ui.composables.screens.loginscreen.TAG
 import com.example.studyapp.util.*
 import com.example.studyapp.util.State.ApiState
@@ -193,21 +191,28 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
                         tag,
                         "handleUserState: Got a valid user object. Username: ${user.firstName} email: ${user.email}"
                     )
-                    _loginScreenContract.value.screenState.apiState =
-                        ApiState.Success.UserApiSuccess(user)
-                    _loginScreenContract.value.screenState.currentUser = user
-                    if (Navigator.currentScreen.value != Screens.MainScreen) {
-                        Navigator.navigateTo(Screens.MainScreen)
+                    _loginScreenContract.value = with(_loginScreenContract) {
+                        value.copy(
+                            screenSideEffects = SideEffects.LoginScreenSideEffects.SetCurrentUser(
+                                user
+                            ),
+                            screenEvent = Events.LoginScreenEvents.OnComplete
+                        )
                     }
+
                 } else {
                     Log.e(tag, "handleUserState: Default User retrieved. Ignoring.")
                 }
             }
             is ApiState.Error -> {
-                with(_loginScreenContract.value.screenState) {
+                with(_loginScreenContract) {
                     Log.e(tag, "handleUserState: Error from studyapp: ${userState.data}")
-                    error = userState.data
-                    apiState = ApiState.Sleep
+                    value = value.apply {
+                        screenState = value.screenState.copy(
+                            error = userState.data,
+                            apiState = ApiState.Sleep
+                        )
+                    }
                 }
 
             }
@@ -277,19 +282,25 @@ class UserViewModel @Inject constructor(private val repo: UserRepository) : View
     private fun updateUser(user: User) = repo.updateUser(user)
 
 
-    fun clearLoginError() {
-        _loginScreenContract.value.screenState.error = StudyAppError.newBlankInstance()
+    fun setLoginError(error: StudyAppError = StudyAppError.newBlankInstance()) {
+        with(_loginScreenContract.value) {
+            screenState = screenState.copy(
+                error = error
+            )
+        }
     }
 
     fun changeLoginMethod(signInMethod: SignInOptions) {
-        when (signInMethod) {
-            SignInOptions.EMAIL_PASSWORD -> {
-                _loginScreenContract.value.screenState =
-                    _loginScreenContract.value.screenState.copy(
-                        signInOption = SignInOptions.EMAIL_PASSWORD
-                    )
+        with(_loginScreenContract) {
+            when (signInMethod) {
+                SignInOptions.EMAIL_PASSWORD -> {
+                    value.screenState =
+                        value.screenState.copy(
+                            signInOption = SignInOptions.EMAIL_PASSWORD
+                        )
+                }
+                SignInOptions.GOOGLE -> TODO()
             }
-            SignInOptions.GOOGLE -> TODO()
         }
     }
 

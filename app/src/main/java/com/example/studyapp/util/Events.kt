@@ -6,38 +6,42 @@ import com.example.studyapp.data.model.User
 
 sealed class Events {
     open class LoginScreenEvents : Events() {
-        data class onEmailLoginAttempt(val email: String, val password: String) :
+        data class OnEmailLoginAttempt(val email: String, val password: String) :
             LoginScreenEvents()
 
-        data class onSignUpAttempt(
+        data class OnSignUpAttempt(
             val newUser: User,
             val passwordText: String,
             val verifyPWText: String,
             val context: Context
         ) : LoginScreenEvents()
 
-        data class onLoginMethodSwitch(val signInMethod: SignInOptions) : LoginScreenEvents()
-        data class onToggleOption(
+        data class OnLoginMethodSwitch(val signInMethod: SignInOptions) : LoginScreenEvents()
+        data class OnToggleOption(
             val toggleable: Toggleable,
             val verification: VerificationOptions?
         ) :
             LoginScreenEvents()
 
-        object onGoogleLoginAttempt : LoginScreenEvents()
-        object onClearError : LoginScreenEvents()
-        data class onValidationError(val error: StudyAppError, val value: String) :
+        object OnGoogleLoginAttempt : LoginScreenEvents()
+        object OnClearError : LoginScreenEvents()
+        object OnComplete : LoginScreenEvents()
+        object OnStart
+            : LoginScreenEvents()
+
+        data class OnValidationError(val error: StudyAppError, val value: String) :
             LoginScreenEvents()
     }
 
     open class HomeScreenEvents : Events() {
-        data class onWeekSelected(val selectedWeek: String) : HomeScreenEvents()
+        data class OnWeekSelected(val selectedWeek: String) : HomeScreenEvents()
     }
 
     open class QuestionListScreenEvents : Events() {
-        data class onQuestionSelected(val question: Question) : QuestionListScreenEvents()
+        data class OnQuestionSelected(val question: Question) : QuestionListScreenEvents()
     }
 
     open class QuestionScreenEvents : Events() {
-        data class onAnswerSelected(val selectedIndex: Int) : QuestionScreenEvents()
+        data class OnAnswerSelected(val selectedIndex: Int) : QuestionScreenEvents()
     }
 }

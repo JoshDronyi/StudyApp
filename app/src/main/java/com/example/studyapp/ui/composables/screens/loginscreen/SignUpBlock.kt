@@ -90,14 +90,14 @@ fun SignUpBlock(
                             when (toggleable) {
                                 Toggleable.DATEPICKER -> {
                                     onEventOccurred.invoke(
-                                        Events.LoginScreenEvents.onToggleOption(
+                                        Events.LoginScreenEvents.OnToggleOption(
                                             toggleable, null
                                         )
                                     )
                                 }
                                 Toggleable.VERIFICATION -> {
                                     onEventOccurred.invoke(
-                                        Events.LoginScreenEvents.onToggleOption(
+                                        Events.LoginScreenEvents.OnToggleOption(
                                             toggleable,
                                             VerificationOptions.SIGN_IN
                                         )
@@ -117,7 +117,7 @@ fun SignUpBlock(
             onSignUpClicked = {
                 newUser.isDefault = false
                 onEventOccurred.invoke(
-                    Events.LoginScreenEvents.onSignUpAttempt(
+                    Events.LoginScreenEvents.OnSignUpAttempt(
                         newUser, passwordText, verifyPWText, context
                     )
                 )
@@ -141,7 +141,7 @@ fun SignUpBlock(
             when (sentStep) {
                 SignUpSteps.NAME_DETAILS -> {
                     onEventOccurred.invoke(
-                        Events.LoginScreenEvents.onToggleOption(
+                        Events.LoginScreenEvents.OnToggleOption(
                             Toggleable.VERIFICATION,
                             VerificationOptions.SIGN_IN
                         )

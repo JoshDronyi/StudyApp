@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
@@ -33,7 +34,8 @@ const val TAG = "HomeScreen"
 
 @ExperimentalCoroutinesApi
 @Composable
-fun MyAppScreen(
+fun HomeScreen(
+    navController: NavController,
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -57,7 +59,7 @@ fun MyAppScreen(
                     "MyAppScreen: Success: $state, setting questionList"
                 )
                 questionListViewModel.setQuestionList(state.questionList)
-                Navigator.navigateTo(Screens.WeekQuestionsScreen)
+                navController.navigate(Screens.QuestionListScreen.route)
             }
             is ApiState.Sleep, is ApiState.Loading -> {
                 Log.e(TAG, "STATE : $state)")
@@ -99,7 +101,7 @@ fun MyApp(onWeekSelect: (event: HomeScreenEvents) -> Unit) {
 
             WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
                 onWeekSelect.invoke(
-                    HomeScreenEvents.onWeekSelected(weekNumber)
+                    HomeScreenEvents.OnWeekSelected(weekNumber)
                 )
             }
         }

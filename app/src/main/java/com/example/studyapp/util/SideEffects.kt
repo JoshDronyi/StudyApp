@@ -25,23 +25,26 @@ sealed class SideEffects {
             val verifyPWText: String,
             val context: Context
         ) : LoginScreenSideEffects()
-    }
 
-    data class NavigationEffect(
-        val navTarget: NavTarget
-    ):SideEffects()
+        data class Navigate(val target: Screens) : LoginScreenSideEffects()
+
+    }
 
     open class HomeScreenSideEffects : SideEffects() {
         data class SetCurrentWeek(var currentweek: String) : HomeScreenSideEffects()
+        data class Navigate(val target: Screens) : HomeScreenSideEffects()
     }
 
     open class QuestionListScreenSideEffects : SideEffects() {
         data class SetCurrentQuestion(var currentQuestion: Question) :
             QuestionListScreenSideEffects()
+
+        data class Navigate(val target: Screens) : QuestionListScreenSideEffects()
     }
 
     open class QuestionScreenSideEffects : SideEffects() {
         data class SetSelectedAnswer(var index: Int) : QuestionScreenSideEffects()
+        data class Navigate(val target: Screens) : QuestionScreenSideEffects()
     }
 
 

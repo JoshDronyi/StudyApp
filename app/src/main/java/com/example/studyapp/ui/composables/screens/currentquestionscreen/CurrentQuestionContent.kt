@@ -15,10 +15,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
-import com.example.studyapp.util.Navigator
 import com.example.studyapp.util.QuestionStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 @ExperimentalCoroutinesApi
 @Composable
 fun QuestionScreen(
+    navContrller: NavController,
     questionListViewModel: QuestionListViewModel = viewModel()
 ) {
     val tag = "QUESTIONSCREEN"
@@ -42,7 +43,7 @@ fun QuestionScreen(
             scope.launch {
                 Log.e(tag, "Question Screen: last question has been answered.")
                 questionListViewModel.clearApiState()
-                Navigator.navigateUp()
+                navContrller.navigateUp()
             }
         }
     }
