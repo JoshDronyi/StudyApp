@@ -105,9 +105,7 @@ fun handleSideEffect(
             )
         }
         is Navigate -> {
-            navController.navigate(sideEffect.target.route) {
-                launchSingleTop = true
-            }
+            navController.navigateToScreen(sideEffect.target)
         }
     }
 }

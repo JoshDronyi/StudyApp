@@ -27,9 +27,12 @@ import com.example.studyapp.ui.composables.sharedcomposables.ProgressBanner
 import com.example.studyapp.ui.composables.sharedcomposables.QuestionCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
+import com.example.studyapp.util.Events.QuestionListScreenEvents
+import com.example.studyapp.util.Events.QuestionListScreenEvents.*
 import com.example.studyapp.util.QuestionStatus
 import com.example.studyapp.util.Screens
 import com.example.studyapp.util.generateStudentProgress
+import com.example.studyapp.util.navigateToScreen
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -54,14 +57,25 @@ fun QuestionListScreen(
                 questions = questionList,
                 progress = progress,
                 currentWeek = currentWeek,
-                user = loginContract.screenState.currentUser,
-                onAddNewQuestionSelect = {
-                    navController.navigate(Screens.NewQuestionScreen.route)
+                user = loginContract.screenState.currentUser
+            ) { event ->
+                when (event) {
+                    is OnAddNewQuestion -> {
+                        navController.navigateToScreen(Screens.NewQuestionScreen)
+                    }
+                    is OnNewWeekSelected -> {
+                        // use the direction object given to u in order to go
+                        // to the next week or the previous week
+
+                    }
+                    is OnQuestionSelected -> {
+                        questionListViewModel.setCurrentQuestion(event.question)
+                        navController.navigateToScreen(Screens.QuestionScreen)
+                    }
                 }
-            ) { question ->
-                questionListViewModel.setCurrentQuestion(question)
-                navController.navigate(Screens.QuestionScreen.route)
             }
+
+
             questionListViewModel.setCurrentProgress(
                 questionList.generateStudentProgress()
             )
@@ -75,8 +89,7 @@ fun WeekQuestions(
     progress: StudentProgress?,
     currentWeek: String?,
     user: User? = User.newBlankInstance(),
-    onAddNewQuestionSelect: () -> Unit,
-    onQuestionSelected: (Question) -> Unit
+    onWeekQuestionEventOccurred: (QuestionListScreenEvents) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -91,7 +104,11 @@ fun WeekQuestions(
                 ProgressBanner(
                     currentWeek = week,
                     progress = progress
-                )
+                ) { buttonOption ->
+                    onWeekQuestionEventOccurred.invoke(
+                        OnNewWeekSelected(buttonOption)
+                    )
+                }
             }
         }
 
@@ -134,9 +151,12 @@ fun WeekQuestions(
                         }
                         QuestionCard(
                             question = question,
-                            backgroundColor = backgroundColor,
-                            onQuestionSelected = onQuestionSelected
-                        )
+                            backgroundColor = backgroundColor
+                        ) { selectedQuestion ->
+                            onWeekQuestionEventOccurred.invoke(
+                                OnQuestionSelected(selectedQuestion)
+                            )
+                        }
                     }
                 }
             }
@@ -150,7 +170,9 @@ fun WeekQuestions(
                                 "New Question Button hit",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            onAddNewQuestionSelect.invoke()
+                            onWeekQuestionEventOccurred.invoke(
+                                OnAddNewQuestion
+                            )
                         },
                         modifier = Modifier
                             .zIndex(.8f)

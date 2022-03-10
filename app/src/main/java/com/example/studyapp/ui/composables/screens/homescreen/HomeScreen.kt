@@ -46,8 +46,12 @@ fun HomeScreen(
     LaunchedEffect(theEffect.value, theState.value) {
         when (val effect = theEffect.value) {
             is SetCurrentWeek -> {
+                questionListViewModel.clearApiState()
                 questionListViewModel.getQuestions(effect.currentweek)
                 questionListViewModel.clearSideEffects()
+            }
+            else -> {
+                Log.e(TAG, "HomeScreen: the unchecked effect was $effect")
             }
         }
         Log.e(TAG, "MyAppScreen: Side Effect Launched!")
@@ -59,7 +63,7 @@ fun HomeScreen(
                     "MyAppScreen: Success: $state, setting questionList"
                 )
                 questionListViewModel.setQuestionList(state.questionList)
-                navController.navigate(Screens.QuestionListScreen.route)
+                navController.navigateToScreen(Screens.QuestionListScreen)
             }
             is ApiState.Sleep, is ApiState.Loading -> {
                 Log.e(TAG, "STATE : $state)")

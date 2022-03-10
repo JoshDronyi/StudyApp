@@ -1,6 +1,7 @@
 package com.example.studyapp.ui.composables.sharedcomposables
 
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,9 +11,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -29,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.rememberImagePainter
+import coil.transform.CircleCropTransformation
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.util.*
@@ -37,7 +42,7 @@ import com.example.studyapp.util.*
 fun QuestionCard(
     question: Question,
     backgroundColor: Color,
-    onQuestionSelected: (Question) -> Unit
+    onEventOccured: (Question) -> Unit,
 ) {
     Card(
         elevation = 10.dp,
@@ -49,7 +54,7 @@ fun QuestionCard(
         Box(
             Modifier
                 .clickable {
-                    onQuestionSelected.invoke(question)
+                    onEventOccured.invoke(question)
                 }
                 .fillMaxSize()
                 .background(backgroundColor)
@@ -63,7 +68,11 @@ fun QuestionCard(
 }
 
 @Composable
-fun ProgressBanner(currentWeek: String, progress: StudentProgress) {
+fun ProgressBanner(
+    currentWeek: String,
+    progress: StudentProgress,
+    onWeekChange: (ButtonOptions) -> Unit
+) {
     Surface(
         elevation = 16.dp,
         shape = RoundedCornerShape(35.dp),
@@ -75,13 +84,33 @@ fun ProgressBanner(currentWeek: String, progress: StudentProgress) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            Text(
-                text = formatWeekString(currentWeek),
-                textAlign = TextAlign.Center,
-                fontSize = 28.sp,
+
+            Card(
+                shape = RoundedCornerShape(15.dp),
                 modifier = Modifier
-                    .padding(16.dp)
-            )
+                    .background(color = Color.Green)
+                    .alpha(.5f)
+            ) {
+                Button(onClick = { onWeekChange.invoke(ButtonOptions.BACK) }) {
+                    Image(
+                        imageVector = Icons.Outlined.KeyboardArrowLeft,
+                        contentDescription = "Head to previous week's questions."
+                    )
+                }
+                Text(
+                    text = formatWeekString(currentWeek),
+                    textAlign = TextAlign.Center,
+                    fontSize = 28.sp,
+                    modifier = Modifier
+                        .padding(16.dp)
+                )
+                Button(onClick = { onWeekChange.invoke(ButtonOptions.NEXT) }) {
+                    Image(
+                        imageVector = Icons.Outlined.KeyboardArrowRight,
+                        contentDescription = "EHad to next week's questions."
+                    )
+                }
+            }
             with(progress) {
                 Text(
                     text = "${correctAnswers}/${totalQuestions}",
@@ -239,26 +268,30 @@ fun DrawerImage(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(16.dp)
     ) {
-        if (imageUrl == null) {
-            Image(
-                ImageVector.vectorResource(id = imageID),
-                contentDescription = description,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .fillMaxWidth(.9f)
-                    .heightIn(min = 150.dp, max = 200.dp)
+        imageUrl?.let {
+            Log.e(
+                TAG,
+                "DrawerImage: image Url wasn't null ${imageUrl.path} \n imageID was $imageID"
             )
-        } else {
             Image(
-                painter = rememberImagePainter(data = imageUrl.path),
+                painter = rememberImagePainter(
+                    data = imageUrl,
+                    builder = {
+                        transformations(CircleCropTransformation())
+                        crossfade(3000)
+                    }),
                 contentDescription = description,
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .fillMaxWidth(.9f)
-                    .heightIn(min = 150.dp, max = 200.dp)
+                modifier = Modifier.size(200.dp)
             )
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-        Text(text = description)
+        } ?: Image(
+            ImageVector.vectorResource(id = imageID),
+            contentDescription = description,
+            modifier = Modifier
+                .clip(CircleShape)
+                .fillMaxWidth(.9f)
+                .fillMaxHeight(.5f)
+        )
     }
+    Spacer(modifier = Modifier.height(20.dp))
+    Text(text = description)
 }

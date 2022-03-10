@@ -39,6 +39,7 @@ import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.ui.viewmodel.UserViewModel
 import com.example.studyapp.util.ButtonOptions
 import com.example.studyapp.util.Screens.*
+import com.example.studyapp.util.navigateToScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -165,9 +166,7 @@ class MainActivity : AppCompatActivity() {
                 onDrawerToggle.invoke(isOpen)
             }
             ButtonOptions.SETTINGS -> {
-                navController.navigate(SettingsScreen.route) {
-                    launchSingleTop = true
-                }
+                navController.navigateToScreen(SettingsScreen)
             }
         }
     }
