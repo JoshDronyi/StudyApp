@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.StudentProgress
 import com.example.studyapp.data.model.User
@@ -103,6 +104,11 @@ fun FirebaseUser.asUser(): User {
     return user
 }
 
+fun NavController.navigateToScreen(screens: Screens) {
+    this.navigate(screens.route) {
+        launchSingleTop = true
+    }
+}
 
 fun Date.getFormattedDate(format: String): String {
     return SimpleDateFormat(format, Locale.US)

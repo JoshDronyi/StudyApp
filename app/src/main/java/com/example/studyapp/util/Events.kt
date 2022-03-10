@@ -1,6 +1,7 @@
 package com.example.studyapp.util
 
 import android.content.Context
+import android.media.metrics.Event
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.data.model.User
 
@@ -39,6 +40,8 @@ sealed class Events {
 
     open class QuestionListScreenEvents : Events() {
         data class OnQuestionSelected(val question: Question) : QuestionListScreenEvents()
+        data class OnNewWeekSelected(var direction: ButtonOptions) : QuestionListScreenEvents()
+        object OnAddNewQuestion : QuestionListScreenEvents()
     }
 
     open class QuestionScreenEvents : Events() {

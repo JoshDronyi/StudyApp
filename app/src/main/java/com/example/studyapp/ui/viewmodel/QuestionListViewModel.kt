@@ -48,7 +48,10 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     @ExperimentalCoroutinesApi
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
-        Log.e(TAG, "getQuestions:  week was $week")
+        Log.e(
+            TAG,
+            "getQuestions:  week was $week, currentState is ${homeScreenContract.value.screenState}"
+        )
         setHomeScreenAPIState(ApiState.Loading)
 
         repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->

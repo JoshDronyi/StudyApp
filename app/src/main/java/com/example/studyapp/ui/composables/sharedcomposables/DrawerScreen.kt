@@ -16,6 +16,7 @@ import com.example.studyapp.R
 import com.example.studyapp.data.model.User
 import com.example.studyapp.util.DrawerOptions
 import com.example.studyapp.util.Screens
+import com.example.studyapp.util.navigateToScreen
 
 @ExperimentalCoilApi
 @Composable
@@ -37,11 +38,15 @@ fun NavDrawer(
                 imageUrl = Uri.parse(it.photoUrl),
                 description = it.firstName,
             )
-        } ?: DrawerImage(
-            imageID = R.drawable.ic_account_circle,
-            description = "Account User's name",
-            imageUrl = null
-        )
+        } ?: kotlin.run {
+            Log.e(TAG, "NavDrawer: drawing without user information.")
+            DrawerImage(
+                imageID = R.drawable.ic_account_circle,
+                description = "Account User's name",
+                imageUrl = null
+            )
+        }
+
 
 
         Divider()
@@ -71,7 +76,7 @@ private fun handleDrawerSelection(
     when (option) {
         DrawerOptions.HOME -> {
             Log.e(TAG, "handleDrawerSelection: MainScreen Route: ${Screens.HomeScreen.route}")
-            navController.navigate(Screens.HomeScreen.route)
+            navController.navigateToScreen(Screens.HomeScreen)
         }
         DrawerOptions.SCOREBOARD -> {
             Toast.makeText(
@@ -82,7 +87,7 @@ private fun handleDrawerSelection(
         }
         DrawerOptions.PROFILE -> {
             Log.e(TAG, "handleDrawerSelection: currentScreen is $currentScreen")
-            navController.navigate(Screens.ProfileScreen.route)
+            navController.navigateToScreen(Screens.ProfileScreen)
         }
     }
 }
