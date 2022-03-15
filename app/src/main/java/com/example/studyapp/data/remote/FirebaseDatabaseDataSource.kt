@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.*
+import java.lang.Exception
 
 @ExperimentalCoroutinesApi
 fun addValueListenerToReference(
@@ -28,18 +29,46 @@ fun addValueListenerToReference(
             )
             when (resultType) {
                 ResultType.USER -> {
-                    trySend(
-                        ApiState.Success.UserApiSuccess(
-                            returnSnapShotAsUser(snapshot)
+                    if (snapshot.value == null) {
+                        trySend(
+                            ApiState.Error(
+                                StudyAppError.newBlankInstance().apply {
+                                    data =
+                                        Exception("No Users are available from this path ")
+                                    errorType = ErrorType.NETWORK
+                                    message = "Unable to get users from this location."
+                                    shouldShow = true
+                                }
+                            )
                         )
-                    )
+                    } else {
+                        trySend(
+                            ApiState.Success.UserApiSuccess(
+                                returnSnapShotAsUser(snapshot)
+                            )
+                        )
+                    }
                 }
                 ResultType.QUESTION -> {
-                    trySend(
-                        ApiState.Success.QuestionApiSuccess(
-                            returnSnapShotAsQuestionList(snapshot, week)
+                    if (snapshot.value == null) {
+                        trySend(
+                            ApiState.Error(
+                                StudyAppError.newBlankInstance().apply {
+                                    data =
+                                        Exception("No questions are available from this week path. ")
+                                    errorType = ErrorType.NETWORK
+                                    message = "Unable to get questions from this path."
+                                    shouldShow = true
+                                }
+                            )
                         )
-                    )
+                    } else {
+                        trySend(
+                            ApiState.Success.QuestionApiSuccess(
+                                returnSnapShotAsQuestionList(snapshot, week)
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -136,6 +165,7 @@ class FirebaseDatabaseDataSource {
             .child("/$week")
 
         addValueListenerToReference(ref, error = null, ResultType.QUESTION, week).collectLatest {
+            Log.e(TAG, "getQuestionsByWeek: Got question state $it")
             send(it)
         }
     }

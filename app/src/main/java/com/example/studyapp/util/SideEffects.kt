@@ -32,6 +32,7 @@ sealed class SideEffects {
 
     open class HomeScreenSideEffects : SideEffects() {
         data class SetCurrentWeek(var currentweek: String) : HomeScreenSideEffects()
+        data class GoToQuestionSet(val questions: List<Question>) : HomeScreenSideEffects()
         data class Navigate(val target: Screens) : HomeScreenSideEffects()
     }
 

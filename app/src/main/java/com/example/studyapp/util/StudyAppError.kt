@@ -10,7 +10,7 @@ data class StudyAppError(
 ) {
     companion object {
         fun newBlankInstance(): StudyAppError {
-            return StudyAppError(null, "Default error message", ErrorType.DEFAULT,false)
+            return StudyAppError(null, "Default error message", ErrorType.DEFAULT, false)
         }
     }
 }

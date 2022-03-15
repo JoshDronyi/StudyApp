@@ -9,11 +9,9 @@ import com.example.studyapp.data.repo.QuestionRepository
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionListContract
 import com.example.studyapp.ui.composables.screen_contracts.QuestionScreenContract
-import com.example.studyapp.util.ErrorType
 import com.example.studyapp.util.Events
 import com.example.studyapp.util.SideEffects
 import com.example.studyapp.util.State.ApiState
-import com.example.studyapp.util.StudyAppError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,6 +35,8 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     private val _questionContract: MutableStateFlow<QuestionScreenContract> =
         MutableStateFlow(QuestionScreenContract())
 
+    private val weekQuestionCache: MutableMap<String, MutableList<Question>> = mutableMapOf()
+
     //observable contracts
     val homeScreenContract: StateFlow<HomeContract> get() = _homeScreenContract
     val questionListContract: StateFlow<QuestionListContract> get() = _questionListContract
@@ -50,102 +50,66 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     fun getQuestions(week: String) = viewModelScope.launch(Dispatchers.IO) {
         Log.e(
             TAG,
-            "getQuestions:  week was $week, currentState is ${homeScreenContract.value.screenState}"
+            "getQuestions:  week was $week, currentState is ${homeScreenContract.value.screenState}" +
+                    " \n the cache was ${weekQuestionCache[week]}"
         )
-        setHomeScreenAPIState(ApiState.Loading)
-
-        repository.getQuestionsByWeek(week = week).collect { dataFromTheInternet ->
-            Log.e(
-                TAG,
-                " getQuestions (inside repo lambda): Questions from Internet -> $dataFromTheInternet"
-            )
-            compareRemoteQuestionSet(week, dataFromTheInternet)
+        if (weekQuestionCache[week].isNullOrEmpty()) {
+            Log.e(TAG, "getQuestions: Cache was empty, going to get from internet")
+            getQuestionsFromInternet(week)
+        } else {
+            weekQuestionCache[week]?.let { questionList ->
+                Log.e(
+                    TAG,
+                    "getQuestions: Question list was $questionList, setting home screen event"
+                )
+                setHomeScreenEvent(
+                    Events.HomeScreenEvents.GoToSelectedWeek(
+                        questionList
+                    )
+                )
+            }
         }
     }
 
-    private suspend fun compareRemoteQuestionSet(week: String, dataFromTheInternet: ApiState<*>) {
-        when (dataFromTheInternet) {
-            is ApiState.Success.QuestionApiSuccess -> {
-                //Save question to the database
-                repository.getQuestionsByWeekOnDatabase(week).collect { localQuestionList ->
-                    Log.e(
-                        TAG,
-                        "getQuestions(inside repo DB lambda): Questions from DB -> $localQuestionList"
-                    )
+    private suspend fun getQuestionsFromInternet(week: String) =
+        repository.getQuestionsByWeek(week).collect { dataFromTheInternet ->
+            Log.e(TAG, "getQuestionsFromInternet: Internet data list $dataFromTheInternet")
+            when (dataFromTheInternet) {
+                is ApiState.Success.QuestionApiSuccess -> {
 
-                    if (localQuestionList.isNotEmpty()) {
-                        val finalList: MutableList<Question> = mutableListOf()
-                        val unsavedQuestions: MutableList<Question> = mutableListOf()
+                    //Add missing questions from the internet.
+                    dataFromTheInternet.questionList.forEach { currentQuestion ->
+                        if (weekQuestionCache[week]?.contains(currentQuestion) != true) {
+                            if (weekQuestionCache[week].isNullOrEmpty())
+                                weekQuestionCache[week] = mutableListOf()
 
-                        Log.e(TAG, "getQuestions: Questions from the database is not empty")
-
-                        dataFromTheInternet.questionList.forEachIndexed { index, internetQuestion ->
                             Log.e(
                                 TAG,
-                                "getQuestions: index was $index, \n questionList was ${localQuestionList[index]} \n internetQuestion was $internetQuestion "
+                                "getQuestionsFromInternet: Adding question $currentQuestion"
                             )
-                            if (localQuestionList.contains(internetQuestion)) {
-                                val questionIndex = localQuestionList.indexOf(internetQuestion)
-                                internetQuestion.questionStatus =
-                                    localQuestionList[questionIndex].questionStatus
-                            } else {
-                                unsavedQuestions.add(internetQuestion)
-                            }
-                            finalList.add(internetQuestion)
-                        }
-
-                        if (!unsavedQuestions.isNullOrEmpty()) {
-                            Log.e(
-                                TAG,
-                                "compareRemoteQuestionSet: unsavedQuestions were $unsavedQuestions",
-                            )
-                            saveQuestionInDB(*unsavedQuestions.toTypedArray())
-                        }
-
-                        finalList.addAll(unsavedQuestions)
-                        Log.e(
-                            TAG,
-                            "compareRemoteQuestionSet: Setting APIState -> Final list was $finalList"
-                        )
-                        setHomeScreenAPIState(
-                            ApiState.Success.QuestionApiSuccess(finalList)
-                        )
-                    } else {
-                        Log.e(
-                            TAG,
-                            "getQuestions: questions from the database was empty. \n $localQuestionList"
-                        )
-                        if (dataFromTheInternet.questionList.isNotEmpty()) {
-                            Log.e(
-                                TAG,
-                                "compareRemoteQuestionSet: setting homeState to $dataFromTheInternet",
-                            )
-                            setHomeScreenAPIState(dataFromTheInternet)
-                        } else {
-                            Log.e(
-                                TAG,
-                                "compareRemoteQuestionSet: the question set from the internet was empty"
-                            )
-                            setHomeScreenAPIState(
-                                ApiState.Error(
-                                    StudyAppError.newBlankInstance().apply {
-                                        this.data = null
-                                        this.errorType = ErrorType.NETWORK
-                                        this.message =
-                                            "There were no questions stored under this path."
-                                        this.shouldShow = true
-                                    }
-                                )
-                            )
+                            weekQuestionCache[week]?.add(currentQuestion)
                         }
                     }
+
+                    //Send newly cached questions
+                    Log.e(
+                        TAG,
+                        "getQuestionsFromInternet: cache for week $week was ${weekQuestionCache[week]}",
+                    )
+                    weekQuestionCache[week]?.let {
+                        setHomeScreenSideEffect(
+                            SideEffects.HomeScreenSideEffects.GoToQuestionSet(
+                                it
+                            )
+                        )
+                    }  // empty list if no questions from this week online
+                }
+                else -> {
+                    //fall through
+                    setHomeScreenAPIState(dataFromTheInternet)
                 }
             }
-            else -> {
-                Log.e(TAG, "getQuestions: dataFromTheInternet was... $dataFromTheInternet")
-            }
         }
-    }
 
     private fun setHomeScreenAPIState(state: ApiState<*>) =
         viewModelScope.launch {
@@ -160,7 +124,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
             }
         }
 
-    fun clearApiState() = viewModelScope.launch {
+    fun clearHomeApiState() = viewModelScope.launch {
         Log.e(TAG, "clearApiState: clearing api state")
         setHomeScreenAPIState(ApiState.Sleep)
     }
@@ -185,7 +149,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
     }
 
     fun saveQuestionInDB(vararg question: Question) = viewModelScope.launch {
-        repository.saveQuestionsInDatabase(question.asList())
+        repository.saveQuestionsToDB(question.asList())
     }
 
     fun addNewQuestion(week: String, question: Question) = viewModelScope.launch(Dispatchers.IO) {
@@ -202,7 +166,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
         }
     }
 
-    suspend fun setHomeScreenEvent(event: Events.HomeScreenEvents) {
+    suspend fun setHomeScreenEvent(event: Events.HomeScreenEvents) = with(_homeScreenContract) {
         Log.e(TAG, "setHomeScreenEvent: the event was $event")
         lateinit var sideEffect: SideEffects
         when (event) {
@@ -210,24 +174,35 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                 _questionListContract.value.screenState.currentWeek = event.selectedWeek
                 sideEffect = SideEffects.HomeScreenSideEffects
                     .SetCurrentWeek(event.selectedWeek)
-
-                with(_homeScreenContract) {
-                    Log.e(
-                        TAG,
-                        "setHomeScreenEvent: emitting... \nEvent: $event \nSideEffect: $sideEffect"
-                    )
-                    emit(
-                        value.copy(
-                            screenSideEffects = sideEffect,
-                            screenEvent = event
-                        )
-                    )
-                }
+                Log.e(
+                    TAG,
+                    "setHomeScreenEvent: setting week select side effect for ${event.selectedWeek}",
+                )
+                setHomeScreenSideEffect(sideEffect)
+            }
+            is Events.HomeScreenEvents.GoToSelectedWeek -> {
+                sideEffect = SideEffects.HomeScreenSideEffects.GoToQuestionSet(event.questionList)
+                Log.e(TAG, "setHomeScreenEvent: go to week side effect for ${event.questionList}")
+                setHomeScreenSideEffect(sideEffect)
+            }
+            is Events.HomeScreenEvents.ClearApiState ->{
+                clearHomeApiState()
             }
             else -> {
                 Log.e(TAG, "setHomeScreenEvent: unhandled event was $event")
             }
         }
+
+    }
+
+    private suspend fun setHomeScreenSideEffect(
+        sideEffect: SideEffects.HomeScreenSideEffects
+    ) = with(_homeScreenContract) {
+        emit(
+            value.copy(
+                screenSideEffects = sideEffect
+            )
+        )
     }
 
     fun clearSideEffects() {
@@ -239,8 +214,8 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
 
     private fun shouldShowNextQuestion(questions: List<Question>): Boolean =
         with(_questionContract.value) {
-            android.util.Log.e("Question Number", screenState.currentQuestion.questionNumber)
-            android.util.Log.e("Last Number", questions.lastIndex.toString())
+            Log.e("Question Number", screenState.currentQuestion.questionNumber)
+            Log.e("Last Number", questions.lastIndex.toString())
 
             return shouldShowNextQuestion(
                 screenState.currentQuestion.questionNumber.toInt(),
