@@ -2,23 +2,28 @@ package com.example.studyapp.ui.composables.sharedcomposables
 
 import android.net.Uri
 import android.util.Log
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.sharp.KeyboardArrowRight
+import androidx.compose.material.icons.twotone.KeyboardArrowLeft
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -75,39 +80,45 @@ fun ProgressBanner(
 ) {
     Surface(
         elevation = 16.dp,
-        shape = RoundedCornerShape(35.dp),
-        color = MaterialTheme.colors.surface
+        shape = RoundedCornerShape(35.dp)
     ) {
         Row(
             Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-
-            Card(
-                shape = RoundedCornerShape(15.dp),
-                modifier = Modifier
-                    .background(color = Color.Green)
-                    .alpha(.5f)
-            ) {
-                Button(onClick = { onWeekChange.invoke(ButtonOptions.BACK) }) {
-                    Image(
-                        imageVector = Icons.Outlined.KeyboardArrowLeft,
-                        contentDescription = "Head to previous week's questions."
-                    )
-                }
-                Text(
-                    text = formatWeekString(currentWeek),
-                    textAlign = TextAlign.Center,
-                    fontSize = 28.sp,
+            Surface {
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .padding(16.dp)
-                )
-                Button(onClick = { onWeekChange.invoke(ButtonOptions.NEXT) }) {
+                        .padding(10.dp)
+                        .fillMaxWidth(.8f)
+                ) {
                     Image(
-                        imageVector = Icons.Outlined.KeyboardArrowRight,
-                        contentDescription = "EHad to next week's questions."
+                        imageVector = Icons.Outlined.ArrowBack,
+                        contentDescription = "Head to previous week's questions.",
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .clickable {
+                                onWeekChange.invoke(ButtonOptions.BACK)
+                            }
+                    )
+                    Text(
+                        text = formatWeekString(currentWeek),
+                        textAlign = TextAlign.Center,
+                        fontSize = 28.sp
+                    )
+                    Image(
+                        imageVector = Icons.Outlined.ArrowForward,
+                        contentDescription = "Head to next week's questions.",
+                        modifier = Modifier
+                            .padding(5.dp)
+                            .clickable {
+                                onWeekChange.invoke(ButtonOptions.NEXT)
+                            }
                     )
                 }
             }
@@ -115,9 +126,7 @@ fun ProgressBanner(
                 Text(
                     text = "${correctAnswers}/${totalQuestions}",
                     textAlign = TextAlign.Center,
-                    fontSize = 28.sp,
-                    modifier = Modifier
-                        .padding(16.dp)
+                    fontSize = 24.sp
                 )
             }
         }

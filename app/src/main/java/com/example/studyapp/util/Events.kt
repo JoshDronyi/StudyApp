@@ -36,6 +36,8 @@ sealed class Events {
 
     open class HomeScreenEvents : Events() {
         data class OnWeekSelected(val selectedWeek: String) : HomeScreenEvents()
+        data class GoToSelectedWeek(val questionList: List<Question>) : HomeScreenEvents()
+        object ClearApiState : HomeScreenEvents()
     }
 
     open class QuestionListScreenEvents : Events() {

@@ -42,7 +42,7 @@ fun QuestionScreen(
         } else {
             scope.launch {
                 Log.e(tag, "Question Screen: last question has been answered.")
-                questionListViewModel.clearApiState()
+                questionListViewModel.clearHomeApiState()
                 navContrller.navigateUp()
             }
         }

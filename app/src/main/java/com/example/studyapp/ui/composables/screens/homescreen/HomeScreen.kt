@@ -5,10 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Card
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,12 +17,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.studyapp.ui.composables.screen_contracts.HomeContract
+import com.example.studyapp.ui.composables.sharedcomposables.ErrorDialog
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
 import com.example.studyapp.ui.viewmodel.QuestionListViewModel
 import com.example.studyapp.util.*
 import com.example.studyapp.util.Events.HomeScreenEvents
 import com.example.studyapp.util.SideEffects.HomeScreenSideEffects.*
+import com.example.studyapp.util.State
 import com.example.studyapp.util.State.ApiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -46,9 +46,14 @@ fun HomeScreen(
     LaunchedEffect(theEffect.value, theState.value) {
         when (val effect = theEffect.value) {
             is SetCurrentWeek -> {
-                questionListViewModel.clearApiState()
                 questionListViewModel.getQuestions(effect.currentweek)
                 questionListViewModel.clearSideEffects()
+            }
+            is GoToQuestionSet -> {
+                questionListViewModel.setQuestionList(effect.questions)
+                navController.navigateToScreen(Screens.QuestionListScreen)
+                questionListViewModel.clearSideEffects()
+                questionListViewModel.clearHomeApiState()
             }
             else -> {
                 Log.e(TAG, "HomeScreen: the unchecked effect was $effect")
@@ -56,26 +61,10 @@ fun HomeScreen(
         }
         Log.e(TAG, "MyAppScreen: Side Effect Launched!")
         Log.e(TAG, "MyAppScreen: Checking state. $theState")
-        when (val state = theState.value) {
-            is ApiState.Success.QuestionApiSuccess -> {
-                Log.e(
-                    TAG,
-                    "MyAppScreen: Success: $state, setting questionList"
-                )
-                questionListViewModel.setQuestionList(state.questionList)
-                navController.navigateToScreen(Screens.QuestionListScreen)
-            }
-            is ApiState.Sleep, is ApiState.Loading -> {
-                Log.e(TAG, "STATE : $state)")
-            }
-            else -> {
-                Log.e(TAG, "STATE ERROR: Unrecognized Api State: $state")
-            }
-        }
     }
 
     Column {
-        MyApp { event ->
+        MyApp(navController, homeScreenContract.screenState) { event ->
             scope.launch {
                 questionListViewModel.setHomeScreenEvent(event)
             }
@@ -84,7 +73,11 @@ fun HomeScreen(
 }
 
 @Composable
-fun MyApp(onWeekSelect: (event: HomeScreenEvents) -> Unit) {
+fun MyApp(
+    navController: NavController,
+    theState: State.ScreenState.HomeScreenState,
+    onWeekSelect: (event: HomeScreenEvents) -> Unit
+) {
     Surface(color = MaterialTheme.colors.background) {
         Column(
             modifier = Modifier
@@ -92,7 +85,6 @@ fun MyApp(onWeekSelect: (event: HomeScreenEvents) -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             MainTextCard(
                 text = "Android Quiz",
                 modifier = Modifier
@@ -100,13 +92,46 @@ fun MyApp(onWeekSelect: (event: HomeScreenEvents) -> Unit) {
                     .fillMaxHeight(.20f),
                 shape = RoundedCornerShape(25.dp)
             )
+            when (val apiState = theState.apiState) {
+                is ApiState.Success.QuestionApiSuccess -> {
+                    onWeekSelect.invoke(
+                        HomeScreenEvents.GoToSelectedWeek(apiState.questionList)
+                    )
+                }
+                is ApiState.Sleep -> {
+                    Log.e(
+                        TAG,
+                        "MyAppScreen: Success: $apiState, setting questionList"
+                    )
 
-            Spacer(modifier = Modifier.height(80.dp))
+                    Spacer(modifier = Modifier.height(80.dp))
 
-            WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
-                onWeekSelect.invoke(
-                    HomeScreenEvents.OnWeekSelected(weekNumber)
-                )
+                    WeekSelectionCard(weeks = listOf(WK1, WK2, WK3, WK4, WK5, WK6)) { weekNumber ->
+                        onWeekSelect.invoke(
+                            HomeScreenEvents.OnWeekSelected(weekNumber)
+                        )
+                    }
+                }
+                is ApiState.Loading -> {
+                    Log.e(TAG, "STATE : $apiState)")
+                    //Show circular progress bar.
+                    CircularProgressIndicator()
+                }
+                is ApiState.Error -> {
+                    ErrorDialog(
+                        navController = navController,
+                        data = apiState.data,
+                        title = "Error!!",
+                        shouldShow = apiState.data.shouldShow
+                    ) {
+                        onWeekSelect.invoke(Events.HomeScreenEvents.ClearApiState)
+                        navController.navigateUp()
+                        Log.e(TAG, "MyApp: Error Dialog dismissed.")
+                    }
+                }
+                else -> {
+                    Log.e(TAG, "STATE ERROR: Unrecognized Api State: $apiState")
+                }
             }
         }
     }
@@ -156,7 +181,7 @@ fun ButtonRow(weeks: List<String>, onWeekSelect: (weekNumber: String) -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun DefaultPreview() {
-    MyApp {
+    MyApp(rememberNavController(), State.ScreenState.HomeScreenState()) {
         Log.e("JOSH", "Preview log. $it")
     }
 }

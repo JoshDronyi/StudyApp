@@ -11,6 +11,9 @@ sealed class State {
             data class QuestionApiSuccess(val questionList: List<Question>) :
                 Success<List<Question>>(questionList)
 
+            data class DataCacheSuccess(val questionList: List<Question>) :
+                Success<List<Question>>(questionList)
+
             data class UserApiSuccess<out User>(private val user: User) : Success<User>(user)
             data class DefaultUserSuccess<out User>(private val user: User) : Success<User>(user)
         }
