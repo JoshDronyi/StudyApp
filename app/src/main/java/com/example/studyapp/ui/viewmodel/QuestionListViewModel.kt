@@ -185,7 +185,7 @@ class QuestionListViewModel @Inject constructor(private val repository: Question
                 Log.e(TAG, "setHomeScreenEvent: go to week side effect for ${event.questionList}")
                 setHomeScreenSideEffect(sideEffect)
             }
-            is Events.HomeScreenEvents.ClearApiState ->{
+            is Events.HomeScreenEvents.ClearApiState -> {
                 clearHomeApiState()
             }
             else -> {

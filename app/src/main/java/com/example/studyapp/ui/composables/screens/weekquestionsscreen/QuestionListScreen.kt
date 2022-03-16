@@ -66,7 +66,6 @@ fun QuestionListScreen(
                     is OnNewWeekSelected -> {
                         // use the direction object given to u in order to go
                         // to the next week or the previous week
-
                     }
                     is OnQuestionSelected -> {
                         questionListViewModel.setCurrentQuestion(event.question)
