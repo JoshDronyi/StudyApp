@@ -1,17 +1,53 @@
 package com.example.studyapp.ui.composables.screens.currentquestionscreen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.studyapp.data.model.Question
 import com.example.studyapp.ui.composables.sharedcomposables.MainTextCard
+import com.example.studyapp.ui.viewmodel.QuestionListViewModel
+import com.example.studyapp.util.QuestionStatus
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+
+
+@ExperimentalCoroutinesApi
+@Composable
+fun QuestionScreen(
+    navContrller: NavController,
+    questionListViewModel: QuestionListViewModel = viewModel()
+) {
+    val tag = "QUESTIONSCREEN"
+    val scope = rememberCoroutineScope()
+
+    val questionContract by questionListViewModel.questionContract.collectAsState()
+
+    Log.e(tag, "QuestionScreen: current question ${questionContract.screenState.currentQuestion}")
+    CurrentQuestionContent(question = questionContract.screenState.currentQuestion) { text, question ->
+        if (checkButtonAnswer(text, question, questionListViewModel)) {
+            Log.e(tag, "QuestionScreen: Question answered correctly. Next question upcoming.")
+        } else {
+            scope.launch {
+                Log.e(tag, "Question Screen: last question has been answered.")
+                questionListViewModel.clearHomeApiState()
+                navContrller.navigateUp()
+            }
+        }
+    }
+}
 
 @Composable
 fun CurrentQuestionContent(
@@ -27,6 +63,7 @@ fun CurrentQuestionContent(
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
 
+        val cornerRadius = 15.dp
         val mixedAnswers = question.mixAnswers()
         Column(
             modifier = Modifier
@@ -47,7 +84,7 @@ fun CurrentQuestionContent(
                     fontSize = 40.sp
                 )
             }
-            val cornerRadius = 15
+
             MainTextCard(
                 modifier = Modifier
                     .heightIn(min = 200.dp)
@@ -125,5 +162,22 @@ fun AnswerButton(
             )
         }
     }
+}
+
+private fun checkButtonAnswer(
+    text: String,
+    question: Question,
+    questionListViewModel: QuestionListViewModel
+): Boolean {
+    if (text == question.correctAnswer) {
+        questionListViewModel.saveQuestionInDB(question.apply {
+            questionStatus = QuestionStatus.CORRECT_ANSWER.ordinal.toString()
+        })
+    } else {
+        questionListViewModel.saveQuestionInDB(question.apply {
+            questionStatus = QuestionStatus.WRONG_ANSWER.ordinal.toString()
+        })
+    }
+    return questionListViewModel.getNewQuestion()
 }
 

@@ -1,26 +1,23 @@
 package com.example.studyapp.util.hilt
 
 import android.content.Context
-import androidx.room.Room
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.studyapp.data.local.Database
+import com.example.studyapp.data.local.LocalDataSource
 import com.example.studyapp.data.local.QuestionDAO
+import com.example.studyapp.data.remote.AuthDataSource
+import com.example.studyapp.data.factories.DataSourceFactory
+import com.example.studyapp.data.remote.FirebaseDatabaseDataSource
 import com.example.studyapp.data.repo.QuestionRepository
-import com.example.studyapp.data.repo.RepositoryInterface
 import com.example.studyapp.data.repo.UserRepository
-import com.example.studyapp.util.DATABASE_NAME
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.ktx.Firebase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.InternalCoroutinesApi
 import javax.inject.Singleton
 
+@ExperimentalCoroutinesApi
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -29,46 +26,38 @@ object AppModule {
     @Provides
     fun provideDatabase(
         @ApplicationContext context: Context
-    ) = Room
-        .databaseBuilder(context, Database::class.java, DATABASE_NAME)
-        .addMigrations(migration_1_2)
-        .build()
+    ) = DataSourceFactory.getLocalDB(context)
 
 
     @Singleton
     @Provides
     fun provideQuestionRepository(
         dao: QuestionDAO,
-        firebaseDatabase: FirebaseDatabase
-    ) = QuestionRepository(dao, firebaseDatabase)
+        firebase: FirebaseDatabaseDataSource
+    ) = QuestionRepository(firebase, dao)
 
 
     @Singleton
     @Provides
-    fun provideAuth() = FirebaseAuth.getInstance()
+    fun provideAuth() = DataSourceFactory.getAuthDataSource()
 
+    @InternalCoroutinesApi
     @Singleton
     @Provides
-    fun provideUserRepository(auth: FirebaseAuth) = UserRepository(auth)
+    fun provideUserRepository(auth: AuthDataSource) =
+        UserRepository(auth, DataSourceFactory.getFirebaseDataSource())
 
 
     @Singleton
     @Provides
     fun provideDao(
-        database: Database
-    ) = database.questionDAO()
+        database: LocalDataSource
+    ) = database.getQuestionDao()
 
-    @Singleton
+
     @Provides
-    fun firebaseDatabase() = FirebaseDatabase.getInstance()
+    @Singleton
+    fun providesFirebaseDataSource() = FirebaseDatabaseDataSource()
 
 
-    private val migration_1_2 = object : Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            database.execSQL(
-                "CREATE TABLE `StudentProgress` (`week` INTEGER, `totalQuestions` INTEGER, 'answeredQuestions' INTEGER, 'correctAnswers' INTEGER " +
-                        "PRIMARY KEY(`week`))"
-            )
-        }
-    }
 }
